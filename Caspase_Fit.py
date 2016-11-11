@@ -83,6 +83,11 @@ def sigmoid_der1(x, base, amplitude, rate, x0):
     """
     return (amplitude*rate * np.exp(-rate*(x-x0))) / ((1 + np.exp(-rate*(x-x0)))**2)
 
+def gompertz(t, base, amplitude, k, tc):
+    return amplitude * np.exp(- np.exp (-k * (t- tc))) + base
+
+def gompertz_der1(t, base, amplitude, k, tc):
+    return k * amplitude * np.exp(- np.exp (-k * (t- tc)) + tc * k - t * k)
 
 def rhs(t, x, params):
     t = np.asarray(t)
@@ -109,8 +114,33 @@ def rhs(t, x, params):
     
     return xp
 
+def rhs_g(t, x, params):
+    t = np.asarray(t)
+    
+    t_0, rate, k = params[0], params[1], params[2]
+    
+    try:
+        xp = np.zeros([3, len(t)])
+        
+        xp[0, :] = gompertz_der1(t, 0, 1, rate, t_0) # e
+    
+        xp[1, :] = - k * x[0] * x[1] # s
+    
+        xp[2, :] = 2 * k * x[0] * x[1] # p
+        
+    except:
+        xp = np.zeros(3)
+    
+        xp[0] = gompertz_der1(t, 0, 1, rate, t_0) # e
+    
+        xp[1] = - k * x[0] * x[1] # s
+    
+        xp[2] = 2 * k * x[0] * x[1] # p
+    
+    return xp
+
 def simulate(max_time, t_0, rate, k):
-    simulation = ode(rhs).set_integrator('dopri5')
+    simulation = ode(rhs_g).set_integrator('dopri5')
     
     x0 = [0, 0.5, 0]
     t0 = 0
@@ -158,7 +188,7 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
         
         out = 0.    
         for n, m in enumerate(ms):
-            if m<0.4:
+            if m<1.5:
                 out += ((prod[n*timepoints] - m) ** 2)*10
             else:
                 out += (prod[n*timepoints] - m) ** 2
@@ -167,12 +197,12 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
     
     Initial_parameters = np.ones(3)
     Initial_parameters[0] = time_estimate - 30 # t0 for caspase
-    Initial_parameters[1] = 0.1 # caspase rate
-    Initial_parameters[2] = 0.1 # k
+    Initial_parameters[1] = 1 # caspase rate
+    Initial_parameters[2] = 1 # k
     
     bounds = [(0, 100)] * len(Initial_parameters)
-    bounds[1:3] = [(0, 500)] * 2
-    bounds[0] = (0, 300)
+    bounds[1:3] = [(0, 50)] * 2
+    bounds[0] = (0, 900)
     #bounds[1] = (0, 30)
     
     mini = minimize(chi_2, x0=Initial_parameters, bounds=bounds)#, options = option)
