@@ -87,7 +87,7 @@ def gompertz(t, base, amplitude, k, tc):
     return amplitude * np.exp(- np.exp (-k * (t- tc))) + base
 
 def gompertz_der1(t, base, amplitude, k, tc):
-    return k * amplitude * np.exp(- np.exp (-k * (t- tc)) + tc * k - t * k)
+    return k * amplitude * np.exp(- np.exp (k * (t- tc)) - tc * k + t * k)
 
 def rhs(t, x, params):
     t = np.asarray(t)
@@ -188,8 +188,8 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
         
         out = 0.    
         for n, m in enumerate(ms):
-            if m<1.5:
-                out += ((prod[n*timepoints] - m) ** 2)*10
+            if m<0.4:
+                out += ((prod[n*timepoints] - m) ** 2)*4
             else:
                 out += (prod[n*timepoints] - m) ** 2
     
@@ -197,12 +197,13 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
     
     Initial_parameters = np.ones(3)
     Initial_parameters[0] = time_estimate - 30 # t0 for caspase
-    Initial_parameters[1] = 1 # caspase rate
-    Initial_parameters[2] = 1 # k
+    Initial_parameters[1] = 0.1 # caspase rate
+    Initial_parameters[2] = 0.1 # k
+    #Se podrian cambiar esos initial parameters
     
     bounds = [(0, 100)] * len(Initial_parameters)
     bounds[1:3] = [(0, 50)] * 2
-    bounds[0] = (0, 900)
+    bounds[0] = (0, 300) #Probar cambiar a 900
     #bounds[1] = (0, 30)
     
     mini = minimize(chi_2, x0=Initial_parameters, bounds=bounds)#, options = option)
