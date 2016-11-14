@@ -299,7 +299,10 @@ def Fit_Global(df, Am1, Am2, Ad1, Ad2, fluo, timepoints=10, length=90, minimal =
             plt.show()
     
     ms = np.concatenate((np.zeros(start_time), ms, np.ones(length-len(ms)-start_time)))
-    Sol = {'Am': Am, 'Ad': Ad, 'b': b, 'f': ft, 'm': ms}
+    if mini.success:
+        Sol = {'Am': Am, 'Ad': Ad, 'b': b, 'f': ft, 'm': ms}
+    else:
+        Sol = {'Am': np.nan, 'Ad': np.nan, 'b': np.nan, 'f': [np.nan]*len(ms), 'm': [np.nan]*len(ms)}
     
     return Sol
 
