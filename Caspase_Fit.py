@@ -140,7 +140,7 @@ def rhs_g(t, x, params):
     return xp
 
 def simulate(max_time, t_0, rate, k):
-    simulation = ode(rhs_g).set_integrator('dopri5')
+    simulation = ode(rhs).set_integrator('dopri5')
     
     x0 = [0, 0.5, 0]
     t0 = 0
