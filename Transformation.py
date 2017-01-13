@@ -155,12 +155,13 @@ def windowFit(func, y, x=None, timepoints=10, windowsize=30, windowstep=10):
                         popt = _popt
                         chi2 = _chi2
                 except RuntimeError:
-                    popt = [np.nan] * 4
+                    if 'popt' not in locals():
+                        popt = [np.nan] * 4
                 
             popts.append((popt))
         
         else:
-            popts.append((np.nan) * 4)
+            popts.append([np.nan] * 4)
         
         start_ind += windowstep
         end_ind += windowstep
