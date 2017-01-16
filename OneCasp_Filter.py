@@ -15,9 +15,6 @@ import Anisotropy_Functions as af
 import Transformation as tf
 import Caspase_Fit as cf
 
-#from multiprocessing import Pool
-
-
 #%% import data
 
 data = pd.read_pickle('ExpOneCasp.pandas')
@@ -31,6 +28,28 @@ sigmoid_parameters = ['base', 'amplitude','rate', 'x0']
 
 time_coarse = np.arange(0, 50*timepoints, timepoints)
 time_fine = np.arange(0, 50*timepoints)
+
+#%% Useful Functions
+
+def apoptotic_popts(base, amplitude, rate, x0):
+    if base>0.1 and base<0.5 and amplitude>0.001 and amplitude<0.5 and rate>0 and x0>0:
+        return True
+    else:
+        return False
+
+def ask_question(question='?'):    
+    c= 0
+    while c<=3:
+        response = input(question)
+        
+        if response=='y':
+            return True
+        elif response=='n':
+            return False
+        else:
+            print('answer y or n')
+            c+=1
+    raise ValueError
 
 #%% Add anisotropy and fluorescence
 
@@ -76,23 +95,42 @@ for fluo in fluorophores:
 #%% Ask which window fit corresponds
 
 for fluo in fluorophores:
+    best_popts = []
     for i in data.index:
+        these_popts = []
         popts = data['first_popts_'+fluo][i]
         if not isinstance(popts[0], float):
+            c=0
             for popt in popts:
-                this_answer = []
-                for _popt in popts:
-                    plt.plot(time_fine, cf.sigmoid(time_fine, *_popt),'--')
+                c+=1
+                if apoptotic_popts(*popt):
+                    for _popt in popts:
+                        plt.plot(time_fine, cf.sigmoid(time_fine, *_popt),'--')
+                    plt.plot(time_coarse, data['r_'+fluo][i])
+                    plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
+                    
+                    plt.title(fluo+' '+str(i)+' '+str(c))
+                    plt.show()
+                    
+                    answer = ask_question(question='is this the best popt?')
+                    these_popts.append(answer)
+                else:
+                    these_popts.append(False)
+            best_popts.append(these_popts)
+        else:
+            if apoptotic_popts(*popts):
                 plt.plot(time_coarse, data['r_'+fluo][i])
-                plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
-                
+                plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
                 plt.show()
                 
-                answer = input('is this best fit?')
-                if answer
-        else:
-            plt.plot(time_coarse, data['r_'+fluo][i])
-            plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
-            plt.show()
-            
-            answer = input('is this best fit?')
+                answer = ask_question(question='is this a good popt?')
+                
+                these_popts.append(answer)
+            else:
+                these_popts.append(False)
+    
+    data['best_popts_'+fluo] = best_popts
+
+#%% Add 164 TFP, 0 mKate
+
+#%% Double 226 TFP, 376 TFP, 262 mKate, 684 mKate, 253 YFP, 291 YFP
