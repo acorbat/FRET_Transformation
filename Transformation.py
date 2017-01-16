@@ -149,11 +149,11 @@ def windowFit(func, y, x=None, timepoints=10, windowsize=30, windowstep=10):
         if np.sum(np.isfinite(windowed_y)) >= windowsize // 2:
             for rate in (.1, .17, .1, .7, 1):
                 try:
-                    _popt, _, _, (_ ,res) = nanfit(func, windowed_y, xdata=windowed_x, timepoints=timepoints, p0=[0.2, 0.2, 0.2, x[start_ind + windowsize // 2]], returnfit=True)
+                    _popt, _, _, (_ ,res) = nanfit(func, windowed_y, xdata=windowed_x, timepoints=timepoints, p0=[0.2, 0.2, rate, x[start_ind + windowsize // 2]], returnfit=True)
                     _chi2 = np.nansum(res * res)                
                     if _chi2 < chi2:
-                        popt = _popt
-                        chi2 = _chi2
+                        popt = np.copy(_popt)
+                        chi2 = np.copy(_chi2)
                 except RuntimeError:
                     if 'popt' not in locals():
                         popt = [np.nan] * 4
