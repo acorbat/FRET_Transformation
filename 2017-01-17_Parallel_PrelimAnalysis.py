@@ -170,7 +170,7 @@ def myiter(experiment, fluo, ndxs, b):
 
 if __name__ == '__main__':
 
-    
+    PREFIX = '2017-01-17'
     output = dict()
     bs = np.arange(0.8, 1.15, 0.1)
     
@@ -184,51 +184,49 @@ if __name__ == '__main__':
                 for fluo in fluorophores:        
                     for key, output_value in p.imap_unordered(f, myiter(experiment, fluo, data.index, b)):
                         output[key] = output_value
-            
-    
-    print(time.time() - start)
-    PREFIX = '2017-01-17'
-    for b in bs:
-        for experiment in experiments['YFP']:
-            Analyzed = pd.DataFrame(index=data.index)
-            for fluo in fluorophores:            
-                vals = {}
-                vals[fluo+'_Am'] = []
-                vals[fluo+'_Ad'] = []
-                vals[fluo+'_b'] = []
-                vals[fluo+'_m'] = []
+                print(time.time() - start)
+                print(experiment)
                 
-                vals[fluo+'_t0'] = []
-                vals[fluo+'_rate'] = []
-                vals[fluo+'_k'] = []
-                vals[fluo+'_casp'] = []
-                vals[fluo+'_sens'] = []
-                vals[fluo+'_prod'] = []
-                
-                for i in data.index:
-                    c = output.get((fluo, i), [np.nan] * 10)
-                    vals[fluo+'_Am'].append(c[0])
-                    vals[fluo+'_Ad'].append(c[1])
-                    vals[fluo+'_b'].append(c[2])
-                    vals[fluo+'_m'].append(c[3])
+                Analyzed = pd.DataFrame(index=data.index)
+                for fluo in fluorophores:            
+                    vals = {}
+                    vals[fluo+'_Am'] = []
+                    vals[fluo+'_Ad'] = []
+                    vals[fluo+'_b'] = []
+                    vals[fluo+'_m'] = []
                     
-                    vals[fluo+'_t0'].append(c[4])
-                    vals[fluo+'_rate'].append(c[5])
-                    vals[fluo+'_k'].append(c[6])
-                    vals[fluo+'_casp'].append(c[7])
-                    vals[fluo+'_sens'].append(c[8])
-                    vals[fluo+'_prod'].append(c[9])
-                
-                Analyzed[fluo+'_Am'] = vals[fluo+'_Am']
-                Analyzed[fluo+'_Ad'] = vals[fluo+'_Ad']
-                Analyzed[fluo+'_b'] = vals[fluo+'_b']
-                Analyzed[fluo+'_m'] = vals[fluo+'_m']
-                
-                Analyzed[fluo+'_t0'] = vals[fluo+'_t0']
-                Analyzed[fluo+'_rate'] = vals[fluo+'_rate']
-                Analyzed[fluo+'_k'] = vals[fluo+'_k']
-                Analyzed[fluo+'_casp'] = vals[fluo+'_casp']
-                Analyzed[fluo+'_sens'] = vals[fluo+'_sens']
-                Analyzed[fluo+'_prod'] = vals[fluo+'_prod']
+                    vals[fluo+'_t0'] = []
+                    vals[fluo+'_rate'] = []
+                    vals[fluo+'_k'] = []
+                    vals[fluo+'_casp'] = []
+                    vals[fluo+'_sens'] = []
+                    vals[fluo+'_prod'] = []
                     
-            Analyzed.to_pickle(PREFIX + '_OneCasp_'+experiment+'_b_'+str(int(b*100))+'.pandas')
+                    for i in data.index:
+                        c = output.get((fluo, i), [np.nan] * 10)
+                        vals[fluo+'_Am'].append(c[0])
+                        vals[fluo+'_Ad'].append(c[1])
+                        vals[fluo+'_b'].append(c[2])
+                        vals[fluo+'_m'].append(c[3])
+                        
+                        vals[fluo+'_t0'].append(c[4])
+                        vals[fluo+'_rate'].append(c[5])
+                        vals[fluo+'_k'].append(c[6])
+                        vals[fluo+'_casp'].append(c[7])
+                        vals[fluo+'_sens'].append(c[8])
+                        vals[fluo+'_prod'].append(c[9])
+                    
+                    Analyzed[fluo+'_Am'] = vals[fluo+'_Am']
+                    Analyzed[fluo+'_Ad'] = vals[fluo+'_Ad']
+                    Analyzed[fluo+'_b'] = vals[fluo+'_b']
+                    Analyzed[fluo+'_m'] = vals[fluo+'_m']
+                    
+                    Analyzed[fluo+'_t0'] = vals[fluo+'_t0']
+                    Analyzed[fluo+'_rate'] = vals[fluo+'_rate']
+                    Analyzed[fluo+'_k'] = vals[fluo+'_k']
+                    Analyzed[fluo+'_casp'] = vals[fluo+'_casp']
+                    Analyzed[fluo+'_sens'] = vals[fluo+'_sens']
+                    Analyzed[fluo+'_prod'] = vals[fluo+'_prod']
+                        
+                Analyzed.to_pickle(PREFIX + '_OneCasp_'+experiment+'_b_'+str(int(b*100))+'.pandas')
+            print(b)
