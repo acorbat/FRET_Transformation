@@ -159,10 +159,10 @@ for fluo in fluorophores:
             rates.append(np.nan)
             x0s.append(np.nan)
     
-    data['base_'+fluo] = bases
-    data['amplitude_'+fluo] = amplitudes
-    data['rate_'+fluo] = rates
-    data['x0_'+fluo] = x0s
+    data[fluo+'_base'] = bases
+    data[fluo+'_amplitude'] = amplitudes
+    data[fluo+'_rate'] = rates
+    data[fluo+'_x0'] = x0s
 
 #%% Save file to pandas
 
