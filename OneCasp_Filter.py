@@ -134,3 +134,36 @@ for fluo in fluorophores:
 #%% Add 164 TFP, 0 mKate
 
 #%% Double 226 TFP, 376 TFP, 262 mKate, 684 mKate, 253 YFP, 291 YFP
+
+#%% Save best parameters
+
+for fluo in fluorophores:
+    bases = []
+    amplitudes = []
+    rates = []
+    x0s = []
+    for i in data.index:
+        these_popts = data['first_popts_'+fluo][i]
+        these_best = data['best_popts_'+fluo][i]
+        if any(these_best):
+            for is_best, popt in zip(these_best, these_popts):
+                if is_best:
+                    bases.append(popt[0])
+                    amplitudes.append(popt[1])
+                    rates.append(popt[2])
+                    x0s.append(popt[3])
+                    break
+        else:
+            bases.append(np.nan)
+            amplitudes.append(np.nan)
+            rates.append(np.nan)
+            x0s.append(np.nan)
+    
+    data['base_'+fluo] = bases
+    data['amplitude_'+fluo] = amplitudes
+    data['rate_'+fluo] = rates
+    data['x0_'+fluo] = x0s
+
+#%% Save file to pandas
+
+data.to_pickle('OneCaspFiltered.pandas')
