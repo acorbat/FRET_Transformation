@@ -29,8 +29,8 @@ Colors = {'TFP' : 'g', 'YFP' : 'y', 'mKate' : 'r'}
 sigmoid_parameters = ['base', 'amplitude','rate', 'x0']
 fit_parameters = ['Am', 'Ad', 'b', 'm', 't0', 'rate', 'k', 'casp', 'sens', 'prod']
 
-time_coarse = np.arange(0, 50*timepoints, timepoints)
-time_fine = np.arange(0, 50*timepoints)
+time_coarse = np.arange(0, 90*timepoints, timepoints)
+time_fine = np.arange(0, 90*timepoints)
 
 #%% Define useful functions
 
