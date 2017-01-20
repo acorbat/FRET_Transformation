@@ -17,9 +17,10 @@ from scipy.integrate import ode
 
 #Define normalizing function
 def Normalize(vect):
-    vect -= min(vect)
-    vect /= max(vect)
-    return vect
+    new_vect = np.copy(vect)
+    new_vect -= min(new_vect)
+    new_vect /= max(new_vect)
+    return new_vect
 
 # Define Delta functions and sigmoid derivative
 def D(m):
