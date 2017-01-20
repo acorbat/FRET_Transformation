@@ -90,15 +90,22 @@ def gompertz(t, base, amplitude, k, tc):
 def gompertz_der1(t, base, amplitude, k, tc):
     return k * amplitude * np.exp(- np.exp (k * (t- tc)) - tc * k + t * k)
 
-def rhs(t, x, params):
+def rhs(t, x, params, function='sig'):
     t = np.asarray(t)
     
     t_0, rate, k = params[0], params[1], params[2]
     
+    if function=='sig':
+        enzyme_source = sigmoid_der1(t, 0, 1, rate, t_0)
+    elif function=='gom':
+        enzyme_source = gompertz_der1(t, 0, 1, rate, t_0)
+    else:
+        enzyme_source = function
+    
     try:
         xp = np.zeros([3, len(t)])
         
-        xp[0, :] = sigmoid_der1(t, 0, 1, rate, t_0) # e
+        xp[0, :] = enzyme_source # e
     
         xp[1, :] = - k * x[0] * x[1] # s
     
@@ -107,7 +114,7 @@ def rhs(t, x, params):
     except:
         xp = np.zeros(3)
     
-        xp[0] = sigmoid_der1(t, 0, 1, rate, t_0) # e
+        xp[0] = enzyme_source # e
     
         xp[1] = - k * x[0] * x[1] # s
     
@@ -115,32 +122,7 @@ def rhs(t, x, params):
     
     return xp
 
-def rhs_g(t, x, params):
-    t = np.asarray(t)
-    
-    t_0, rate, k = params[0], params[1], params[2]
-    
-    try:
-        xp = np.zeros([3, len(t)])
-        
-        xp[0, :] = gompertz_der1(t, 0, 1, rate, t_0) # e
-    
-        xp[1, :] = - k * x[0] * x[1] # s
-    
-        xp[2, :] = 2 * k * x[0] * x[1] # p
-        
-    except:
-        xp = np.zeros(3)
-    
-        xp[0] = gompertz_der1(t, 0, 1, rate, t_0) # e
-    
-        xp[1] = - k * x[0] * x[1] # s
-    
-        xp[2] = 2 * k * x[0] * x[1] # p
-    
-    return xp
-
-def simulate(max_time, t_0, rate, k):
+def simulate(max_time, t_0, rate, k, func='sig'):
     simulation = ode(rhs).set_integrator('dopri5')
     
     x0 = [0, 0.5, 0]
@@ -148,7 +130,7 @@ def simulate(max_time, t_0, rate, k):
     
     params = [t_0, rate/100, k/100]
     
-    simulation.set_initial_value(x0, t0).set_f_params(params)
+    simulation.set_initial_value(x0, t0).set_f_params(params, func)
     dt = 1
     
     C = []
@@ -168,7 +150,7 @@ def simulate(max_time, t_0, rate, k):
     
     return C, S, P
 
-def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_k=None):
+def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix_rate=None, fix_k=None):
     ms = Normalize(m)
     #ds = (1-ms)/2
     #deltams = savgol_filter(ms, 5, 2, deriv = 1, delta = timepoints)
@@ -185,7 +167,7 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
         if fix_k is not None:
             k = fix_k
         
-        casp, sens, prod = simulate(max_temp, t_0, rate, k)
+        casp, sens, prod = simulate(max_temp, t_0, rate, k, func=function)
         
         out = 0.    
         for n, m in enumerate(ms):
@@ -235,7 +217,7 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
         plt.xlabel('tiempo (minutos)')
         plt.ylabel('m prop')
         plt.show()
-        
+        """
         # Plot d
         plt.plot(time_coarse, ds, 'ob', label='d')
         plt.plot(time_fine, sens, 'b', label='d fit')
@@ -251,6 +233,7 @@ def fit_caspase(m, time_estimate, timepoints=10, Plot=False, fix_rate=None, fix_
         plt.xlabel('tiempo (minutos)')
         plt.ylabel('prop')
         plt.show()
+        """
     
     Sol = {'t0':t_0, 'rate':rate, 'k':k, 'casp':casp, 'sens':sens, 'prod':prod, 'chi':chi}
     return Sol
