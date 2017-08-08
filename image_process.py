@@ -36,8 +36,8 @@ def prepareBGimages(par, perp, parBG, perpBG, sigma=5):
     
     parBG_s, perpBG_s: smoothed BG images
     """
-    par_s = ndimage.filters.gaussian_filter(par, 5, mode='nearest')
-    perp_s = ndimage.filters.gaussian_filter(perp, 5, mode='nearest')
+    par_s = par # ndimage.filters.gaussian_filter(par, 5, mode='nearest')
+    perp_s = perp # ndimage.filters.gaussian_filter(perp, 5, mode='nearest')
     
     if isinstance(parBG, np.ndarray):
         parBG_s = ndimage.filters.gaussian_filter(parBG, 5, mode='nearest')
@@ -95,7 +95,8 @@ def findBG(im1, im2 ,roi=(35,35)):
     
     
     
-    im_max = np.maximum(im1, im2)
+    with np.errstate(invalid='ignore'):
+        im_max = np.maximum(im1, im2)
     nanindex = np.where(np.isnan(im_max))
     im_max[nanindex] = np.nanmax(im_max)
     
@@ -178,8 +179,9 @@ def threshimages(par, perp, thresh):
     par, perp: images with low pixels set to nan
     """
     
-    min_projection = np.minimum(par,perp)
-    nan_pixel = np.where(min_projection < thresh)
+    with np.errstate(invalid='ignore'):
+        min_projection = np.minimum(par,perp)
+        nan_pixel = np.where(min_projection < thresh)
     
     par[nan_pixel] = np.nan
     perp[nan_pixel] = np.nan
@@ -223,7 +225,6 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     par[np.where(par > 4080)] = np.nan
     perp[np.where(perp > 4080)] = perp.min() # ndimage.shift screws up nans
     
-    
     # remove background
     if isinstance(bg, tuple):
         par, perp, newbg_par, newbg_per = prepareBGimages(par, perp, bg[0], bg[1])
@@ -234,46 +235,45 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
         par -= bg
         perp -= bg
     
-
+    
     # correct for the G-factor    
     par, perp = applyGfactor(par, perp, Gfactor)
     
     # shift the perpendicular image to correct for the polarizer missmatch
     perp = shiftimage(perp, shiftXY)
-
+    
     # correct for additional background effects (eg. medium fluorescence)    
-    bg_par, bg_perp = findBG(par, perp)
+    bg_par, bg_perp = findBG(par, perp) # RuntimeWarning
     par -= bg_par
     perp -= bg_perp
-
+    
     # calculate fluorescence 
     fluorescence = par + 2 * perp
     
     # threshold the images
-    par, perp = threshimages(par, perp, thresh)
+    par, perp = threshimages(par, perp, thresh) # Runtimewarning
     
     # calculate the anisotropy
     aniso = (par - perp) / fluorescence
     
     return fluorescence, aniso, (bg_par, bg_perp), perp
 
-def extract_attributes(img, mask, suffix=None):
-    df = pd.DataFrame()
+def extract_attributes(img, mask, suffix='img'):
+    df = []
     for num in range(1, mask.max()+1):
         img_crop = img.copy()
         img_crop[mask!=num] = np.nan
-        this_ext = pd.DataFrame()
-        this_ext['position'] = [30]
-        this_ext['object'] = [num]
+        this_ext = {}
+        this_ext['position'] = 30
+        this_ext['object'] = num
         if np.any(np.isfinite(img_crop)):
-            this_ext['mean'] = [np.nanmean(img_crop)]
-            this_ext['std'] = [np.nanstd(img_crop)]
-            this_ext['p25'] = [np.nanpercentile(img_crop, 25)]
-            this_ext['p75'] = [np.nanpercentile(img_crop, 75)]
-            this_ext['area'] = [np.nansum(mask)]
-        df = df.append(this_ext, ignore_index=True)
-    if suffix is not None:
-        df.rename(columns = {'mean':suffix+'_mean', 'std':suffix+'_std', 'p25':suffix+'_p25', 'p75':suffix+'_p75'}, inplace = True)
+            this_ext[suffix+'_mean'] = np.nanmean(img_crop)
+            this_ext[suffix+'_std'] = np.nanstd(img_crop)
+            this_ext[suffix+'_p25'] = np.nanpercentile(img_crop, 25)
+            this_ext[suffix+'_p75'] = np.nanpercentile(img_crop, 75)
+            this_ext[suffix+'_area'] = np.nansum(mask)
+        df.append(this_ext)
+    df = pd.DataFrame(df)
     return df
 
 def generate_df(par_df, per_df, r_df, f_df):
@@ -297,10 +297,10 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None):
         G_par = np.asarray(tif.imread(str(G_Files[fluo, 'par'])), dtype=float)
         G_per = np.asarray(tif.imread(str(G_Files[fluo, 'per'])), dtype=float)
         
-        all_df = pd.DataFrame()
+        all_df = []
         for t, (par, per) in enumerate(zip(ser_par, ser_per)):
             fluorescence, aniso, (bg_par, bg_perp), per_shifted =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
-            print(t)
+            print('Analyzing object %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
                 mask = ndimage.morphology.binary_erosion(mask, iterations=erode)
@@ -314,15 +314,8 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None):
             r_df['timepoint'] = t
             f_df['timepoint'] = t
             this_all_df = generate_df(par_df, per_df, r_df, f_df)
-        
-            print(all_df.columns)
-            print(this_all_df.columns)
-            if len(this_all_df.columns)!=len(all_df.columns):
-                
-                all_df = pd.concat([all_df, this_all_df], ignore_index=True)
-            else:
-                
-                all_df = pd.concat([all_df, this_all_df], ignore_index=True)
+            all_df.append(this_all_df)
+        all_df = pd.concat(all_df, ignore_index=True)
         try:
             df = df.merge(all_df, how='outer', on=['position', 'object', 'timepoint'])
         except KeyError:
