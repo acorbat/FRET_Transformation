@@ -285,7 +285,7 @@ def generate_df(par_df, per_df, r_df, f_df):
 
 #%% Generate all i_par, i_per, anisotropy and fluorescence images
 
-def process_images(Files, BG_Files, G_Files, masks_folder, erode=None):
+def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=False):
     df = pd.DataFrame()
     for fluo in fluorophores:
         ser_par = np.asarray(tif.imread(str(Files[fluo, 'par'])), dtype=float)
@@ -304,6 +304,10 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None):
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
                 mask = ndimage.morphology.binary_erosion(mask, iterations=erode)
+            if fast:
+                for num in range(1, mask.max()+1):
+                    if num not in [10, 11, 30, 32]:
+                        mask[mask==num] = 0
             par_df = extract_attributes(par, mask, suffix=fluo+'_par')
             per_df = extract_attributes(per_shifted, mask, suffix=fluo+'_per')
             r_df = extract_attributes(aniso, mask, suffix=fluo+'_r')
@@ -368,7 +372,7 @@ Mask_Files = {t: masks_folder.joinpath('o_30_'+str(t)+'.tiff') for t in range(0,
 
 #%% Execute specific cases
 
-noErode_df = process_images(Files, BG_Files, G_Files, masks_folder)
+noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=True)
 
 noErode_df = group_cell(noErode_df)
 
