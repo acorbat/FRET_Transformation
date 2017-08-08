@@ -300,7 +300,7 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None):
         all_df = []
         for t, (par, per) in enumerate(zip(ser_par, ser_per)):
             fluorescence, aniso, (bg_par, bg_perp), per_shifted =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
-            print('Analyzing object %d of %d' % (t, len(ser_par)))
+            print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
                 mask = ndimage.morphology.binary_erosion(mask, iterations=erode)
