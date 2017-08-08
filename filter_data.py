@@ -42,6 +42,20 @@ def r_from_i_to_df(df):
     return df
 
 
+#%% Plot results
+
+def plot_all_curves(df):
+    for i in df.index:
+        plt.figure(figsize=(7,5))
+        for fluo in fluorophores:
+            plt.plot(time_coarse, df[fluo+'_r_mean'][i], Colors[fluo], label='mean r '+fluo)
+            plt.plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
+        plt.title(df['object'][i])
+        plt.legend(loc=2)
+        plt.show()
+        print(i)
+
+
 #%% Useful Functions
 
 def apoptotic_popts(base, amplitude, rate, x0):
