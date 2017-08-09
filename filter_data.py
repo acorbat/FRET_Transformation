@@ -53,7 +53,7 @@ def plot_all_curves(df):
                 fig = plt.gcf()
                 fig.set_size_inches(7, 5)
             plt.title(df['object'][i])
-            plt.legend(loc=2)
+            plt.legend(loc=4)
             plt.show()
             print(i)
 
