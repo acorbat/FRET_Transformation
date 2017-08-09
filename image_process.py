@@ -256,7 +256,7 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     # calculate the anisotropy
     aniso = (par - perp) / fluorescence
     
-    return fluorescence, aniso, (bg_par, bg_perp), perp
+    return fluorescence, aniso, (bg_par, bg_perp), par, perp
 
 def extract_attributes(img, mask, suffix='img'):
     df = []
@@ -299,7 +299,7 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
         
         all_df = []
         for t, (par, per) in enumerate(zip(ser_par, ser_per)):
-            fluorescence, aniso, (bg_par, bg_perp), per_shifted =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
+            fluorescence, aniso, (bg_par, bg_perp), par, per =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
             print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
@@ -309,7 +309,7 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
                     if num not in [10, 11, 30, 32]:
                         mask[mask==num] = 0
             par_df = extract_attributes(par, mask, suffix=fluo+'_par')
-            per_df = extract_attributes(per_shifted, mask, suffix=fluo+'_per')
+            per_df = extract_attributes(per, mask, suffix=fluo+'_per')
             r_df = extract_attributes(aniso, mask, suffix=fluo+'_r')
             f_df = extract_attributes(fluorescence, mask, suffix=fluo+'_f')
             
