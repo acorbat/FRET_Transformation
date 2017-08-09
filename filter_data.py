@@ -46,14 +46,16 @@ def r_from_i_to_df(df):
 
 def plot_all_curves(df):
     for i in df.index:
-        plt.figure(figsize=(7,5))
-        for fluo in fluorophores:
-            plt.plot(time_coarse, df[fluo+'_r_mean'][i], Colors[fluo], label='mean r '+fluo)
-            plt.plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
-        plt.title(df['object'][i])
-        plt.legend(loc=2)
-        plt.show()
-        print(i)
+        if not all([all(np.isnan(df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
+            for fluo in fluorophores:
+                plt.plot(time_coarse, df[fluo+'_r_mean'][i], Colors[fluo], label='mean r '+fluo)
+                plt.plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
+                fig = plt.gcf()
+                fig.set_size_inches(7, 5)
+            plt.title(df['object'][i])
+            plt.legend(loc=2)
+            plt.show()
+            print(i)
 
 
 #%% Useful Functions
