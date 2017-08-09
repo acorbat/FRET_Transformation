@@ -12,6 +12,7 @@ import pathlib
 import tifffile as tif
 
 from scipy import ndimage
+from skimage.morphology import erosion
 
 #%% Functions to process images
 
@@ -303,7 +304,8 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
             print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
-                mask = ndimage.morphology.binary_erosion(mask, iterations=erode)
+                for j in range(erode):
+                    mask = erosion(mask)
             if fast:
                 for num in range(1, mask.max()+1):
                     if num not in [10, 11, 30, 32]:
@@ -379,7 +381,7 @@ noErode_df = group_cell(noErode_df)
 noErode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
 
 erode = 5
-Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode)
+Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode, fast=True)
 
 Erode_df = group_cell(Erode_df)
 
