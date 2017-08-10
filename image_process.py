@@ -273,6 +273,7 @@ def extract_attributes(img, mask, suffix='img'):
             this_ext[suffix+'_p25'] = np.nanpercentile(img_crop, 25)
             this_ext[suffix+'_p75'] = np.nanpercentile(img_crop, 75)
             this_ext[suffix+'_area'] = np.nansum(mask)
+            this_ext[suffix+'_nanpixs'] = np.nansum(np.isnan(img[mask==num]))
         df.append(this_ext)
     df = pd.DataFrame(df)
     return df
