@@ -58,6 +58,22 @@ def plot_all_curves(df):
             print(i)
 
 
+def plot_curves_and_areas(df):
+    for i in df.index:
+        if not all([all(np.isnan(df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
+            fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
+            for fluo in fluorophores:
+                axs[0].plot(time_coarse, df[fluo+'_r_mean'][i], Colors[fluo], label='mean r '+fluo)
+                axs[0].plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
+                axs[0].legend(loc=4)
+                
+                axs[1].plot(time_coarse, df[fluo+'_par_area'][i]-df[fluo+'_par_nanpixs'][i], Colors[fluo], label='area '+fluo)
+                axs[1].legend(loc=3)
+            plt.suptitle(df['object'][i])
+            plt.show()
+            print(i)
+
+
 #%% Useful Functions
 
 def apoptotic_popts(base, amplitude, rate, x0):
