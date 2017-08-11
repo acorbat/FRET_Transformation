@@ -222,9 +222,14 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     par = par.astype(np.float32) 
     perp = perp.astype(np.float32)
     
+    
+    # shift the perpendicular image to correct for the polarizer missmatch
+    perp = shiftimage(perp, shiftXY)
+    
+    
     # remove overexposed areas
     par[np.where(par > 4080)] = np.nan
-    perp[np.where(perp > 4080)] = perp.min() # ndimage.shift screws up nans
+    perp[np.where(perp > 4080)] = np.nan # ndimage.shift screws up nans
     
     # remove background
     if isinstance(bg, tuple):
@@ -240,8 +245,6 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     # correct for the G-factor    
     par, perp = applyGfactor(par, perp, Gfactor)
     
-    # shift the perpendicular image to correct for the polarizer missmatch
-    perp = shiftimage(perp, shiftXY)
     
     # correct for additional background effects (eg. medium fluorescence)    
     bg_par, bg_perp = findBG(par, perp) # RuntimeWarning
