@@ -224,7 +224,10 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     
     # remove overexposed areas
     par[np.where(par > 4080)] = np.nan
-    perp[np.where(perp > 4080)] = perp.min() # ndimage.shift screws up nans
+    perp[np.where(perp > 4080)] = np.nan
+    
+    # threshold the images #should it be before or after corrections to perp)
+    par, perp = threshimages(par, perp, 100)
     
     # remove background
     if isinstance(bg, tuple):
@@ -240,24 +243,48 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     # correct for the G-factor    
     par, perp = applyGfactor(par, perp, Gfactor)
     
-    # shift the perpendicular image to correct for the polarizer missmatch
-    perp = shiftimage(perp, shiftXY)
     
     # correct for additional background effects (eg. medium fluorescence)    
     bg_par, bg_perp = findBG(par, perp) # RuntimeWarning
     par -= bg_par
     perp -= bg_perp
     
-    # calculate fluorescence 
-    fluorescence = par + 2 * perp
     
-    # threshold the images
-    par, perp = threshimages(par, perp, thresh) # Runtimewarning
+    # threshold the images #should it be before or after corrections to perp)
+    par, perp = threshimages(par, perp, thresh)
     
-    # calculate the anisotropy
-    aniso = (par - perp) / fluorescence
     
-    return fluorescence, aniso, (bg_par, bg_perp), par, perp
+    return par, perp
+
+
+def my_shift(img, shift_x=0, shift_y=0):
+    shape = img.shape
+    shifted = np.zeros(shape)
+    shifted.fill(0)
+    
+    dest_y_min = np.clip(shift_y, 0, shape[0])
+    dest_y_max = np.clip(shape[0]+shift_y, 0, shape[0])
+    dest_x_min = np.clip(shift_x, 0, shape[1])
+    dest_x_max = np.clip(shape[1]+shift_x, 0, shape[1])
+    
+    orig_y_min = np.clip(-shift_y, 0, shape[0])
+    orig_y_max = np.clip(shape[0]-shift_y, 0, shape[0])
+    orig_x_min = np.clip(-shift_x, 0, shape[1])
+    orig_x_max = np.clip(shape[1]-shift_x, 0, shape[1])
+    shifted[dest_y_min:dest_y_max, dest_x_min:dest_x_max] = img[orig_y_min:orig_y_max, orig_x_min:orig_x_max]
+    
+    return shifted
+
+
+def prepare_mask(par, per, mask, shiftXY=(0, 0)):
+    mask[np.isnan(par)] = 0
+    shiftXY = (round(-shiftXY[0]), round(-shiftXY[1]))
+    mask = mask.astype(np.float32)
+    mask_per = shiftimage(mask, shiftXY=shiftXY)
+    mask_per[np.isnan(per)] = 0
+    mask_par = shiftimage(mask_per, shiftXY=(-shiftXY[0], -shiftXY[1]))
+    return mask_par.astype(int), mask_per.astype(int)
+
 
 def extract_attributes(img, mask, suffix='img'):
     df = []
@@ -301,7 +328,7 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
         
         all_df = []
         for t, (par, per) in enumerate(zip(ser_par, ser_per)):
-            fluorescence, aniso, (bg_par, bg_perp), par, per =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
+            par, per =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
             print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
@@ -311,16 +338,13 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
                 for num in range(1, mask.max()+1):
                     if num not in [10, 11, 30, 32]:
                         mask[mask==num] = 0
-            par_df = extract_attributes(par, mask, suffix=fluo+'_par')
-            per_df = extract_attributes(per, mask, suffix=fluo+'_per')
-            r_df = extract_attributes(aniso, mask, suffix=fluo+'_r')
-            f_df = extract_attributes(fluorescence, mask, suffix=fluo+'_f')
+            mask_par, mask_per = prepare_mask(par, per, mask, shiftXY=(11.7,-0.6))
+            par_df = extract_attributes(par, mask_par, suffix=fluo+'_par')
+            per_df = extract_attributes(per, mask_per, suffix=fluo+'_per')
             
             par_df['timepoint'] = t
             per_df['timepoint'] = t
-            r_df['timepoint'] = t
-            f_df['timepoint'] = t
-            this_all_df = generate_df(par_df, per_df, r_df, f_df)
+            this_all_df = pd.merge(par_df, per_df, how='outer', on=['position', 'object', 'timepoint'])
             all_df.append(this_all_df)
         all_df = pd.concat(all_df, ignore_index=True)
         try:
@@ -379,11 +403,11 @@ noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=True)
 
 noErode_df = group_cell(noErode_df)
 
-noErode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
+noErode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newnoErode_df.pandas')
 
 erode = 5
 Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode, fast=True)
 
 Erode_df = group_cell(Erode_df)
 
-Erode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_Erode_'+str(erode)+'_df.pandas')
+Erode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newErode_'+str(erode)+'_df.pandas')
