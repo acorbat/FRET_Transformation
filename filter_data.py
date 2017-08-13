@@ -113,31 +113,46 @@ def ask_question(question='?'):
             c+=1
     raise ValueError
 
-#%% Add anisotropy and fluorescence
+#%% Prepare first fit and filter
 
-for fluo in fluorophores:
-    rs = []
-    fs = []
-    I_par_ns = []
-    I_per_ns = []
-    
-    for i in data.index:
-        I_par = data['par_'+fluo][i]
-        I_per = data['per_'+fluo][i]
-        r = af.Anisotropy_FromInt(I_par, I_per)
-        f = af.Fluos_FromInt(I_par, I_per)
-        I_par_n = I_par/f
-        I_per_n = I_per/f
-        
-        rs.append(r)
-        fs.append(f)
-        I_par_ns.append(I_par_n)
-        I_per_ns.append(I_per_n)
-        
-    data['r_'+fluo] = rs
-    data['f_'+fluo] = fs
-    data['I_par_n_'+fluo] = I_par_ns
-    data['I_per_n_'+fluo] = I_per_ns
+def general_fit(df, y_col='r_from_i'):
+    for fluo in fluorophores:
+        this_popts = []
+        for i in df.index:
+            try:
+                #this_popt, _, _, _ = tf.windowFit(cf.sigmoid, df['r_'+fluo][i])
+                this_popt = tf.windowFit(cf.sigmoid, df[fluo+'_'+y_col][i])
+            except:
+                this_popt = [np.nan]*4
+            
+            this_popts.append(this_popt)
+            
+        df[fluo+'_first_popts'] = this_popts
+    return df
+
+
+def first_filter(df):
+    # All fluorophores need to be plotted to understand better what to filter
+    for fluo in fluorophores:
+        ok_1 = []
+        for i in df.index:
+            popts = df[fluo+'_first_popts'][i]
+            if any([apoptotic_popts(*popt) for popt in popts]):
+                plt.plot(time_coarse, df[fluo+'_r_from_i'][i])
+                for popt in popts:
+                    plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
+                for new_fluo in fluorophores:
+                    plt.plot(time_coarse, df[fluo+'_r_from_i'][i], '--'+Colors[fluo])
+                plt.title(fluo+' '+str(i))
+                plt.show()
+                
+                answer = ask_question(question='is this an apoptotic curve?')
+                ok_1.append(answer)
+            else:
+                ok_1.append(False)
+            
+        df[fluo+'_ok_1'] = ok_1
+    return df
 
 #%% First windowed sigmoid fit to estimate parameters
 
