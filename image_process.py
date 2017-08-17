@@ -378,14 +378,14 @@ Mask_Files = {t: masks_folder.joinpath('o_30_'+str(t)+'.tiff') for t in range(0,
 
 #%% Execute specific cases
 
-noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=True)
+noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=False)
 
 noErode_df = group_cell(noErode_df)
 
 noErode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
 
 erode = 5
-Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode, fast=True)
+Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode, fast=False)
 
 Erode_df = group_cell(Erode_df)
 
