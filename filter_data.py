@@ -95,6 +95,22 @@ def plot_oldVSnew(new_df, old_df):
             print(i)
 
 
+def plot_all_curves_withFit(df):
+    for i in df.index:
+        if any([df[fluo+'_ok_1'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                plt.plot(time_coarse, df[fluo+'_r_mean'][i], Colors[fluo], label='mean r '+fluo)
+                plt.plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
+                popt = [df[fluo+'_base'][i], df[fluo+'_amplitude'][i], df[fluo+'_rate'][i], df[fluo+'_x0'][i]]
+                plt.plot(time_fine, cf.sigmoid(time_fine, *popt), 'x'+Colors[fluo], label=fluo+' fit')
+                fig = plt.gcf()
+                fig.set_size_inches(7, 5)
+            plt.title(df['object'][i])
+            plt.legend(loc=4)
+            plt.show()
+            print(i)
+
+
 #%% Useful Functions
 
 def apoptotic_popts(base, amplitude, rate, x0):
@@ -178,6 +194,7 @@ def second_filter(df, col_to_filter='r_from_i'):
                             plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
                             
                             plt.title(fluo+' '+str(i)+' '+str(c))
+                            plt.ylim((0.2, 0.35))
                             plt.show()
                             
                             answer = ask_question(question='is this the best popt?')
@@ -189,6 +206,7 @@ def second_filter(df, col_to_filter='r_from_i'):
                     if apoptotic_popts(*popts):
                         plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
                         plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
+                        plt.ylim((0.2, 0.35))
                         plt.show()
                         
                         answer = ask_question(question='is this a good popt?')
@@ -202,7 +220,7 @@ def second_filter(df, col_to_filter='r_from_i'):
             best_popts.append(these_popts)
         df[fluo+'_best_popts'] = best_popts
         
-        return df
+    return df
 
 
 def set_popts(df):
