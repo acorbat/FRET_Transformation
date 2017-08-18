@@ -16,7 +16,11 @@ import Caspase_Fit as cf
 
 #%% import data
 
-data = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
+noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newnoErode_df.pandas')
+old_noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
+
+Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newErode_5_df.pandas')
+old_Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_Erode_5_df.pandas')
 
 
 #%% Define constants to be used
@@ -131,19 +135,20 @@ def general_fit(df, y_col='r_from_i'):
     return df
 
 
-def first_filter(df):
+def first_filter(df, col_to_filter='r_from_i'):
     # All fluorophores need to be plotted to understand better what to filter
     for fluo in fluorophores:
         ok_1 = []
         for i in df.index:
             popts = df[fluo+'_first_popts'][i]
             if any([apoptotic_popts(*popt) for popt in popts]):
-                plt.plot(time_coarse, df[fluo+'_r_from_i'][i])
+                plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
                 for popt in popts:
                     plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
                 for new_fluo in fluorophores:
-                    plt.plot(time_coarse, df[fluo+'_r_from_i'][i], '--'+Colors[fluo])
+                    plt.plot(time_coarse, df[new_fluo+'_'+col_to_filter][i], '--'+Colors[new_fluo])
                 plt.title(fluo+' '+str(i))
+                plt.ylim((0.22, 0.35))
                 plt.show()
                 
                 answer = ask_question(question='is this an apoptotic curve?')
@@ -153,6 +158,12 @@ def first_filter(df):
             
         df[fluo+'_ok_1'] = ok_1
     return df
+
+
+#%% Execute for specific dfs
+
+old_noErode_df = general_fit(old_noErode_df, y_col='r_mean')
+
 
 #%% First windowed sigmoid fit to estimate parameters
 
