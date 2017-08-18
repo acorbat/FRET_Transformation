@@ -160,6 +160,79 @@ def first_filter(df, col_to_filter='r_from_i'):
     return df
 
 
+def second_filter(df, col_to_filter='r_from_i'):
+    for fluo in fluorophores:
+        best_popts = []
+        for i in df.index:
+            these_popts = []
+            popts = df[fluo+'_first_popts'][i]
+            if df[fluo+'_ok_1'][i]:
+                if not isinstance(popts[0], float):
+                    c=0
+                    for popt in popts:
+                        c+=1
+                        if apoptotic_popts(*popt):
+                            for _popt in popts:
+                                plt.plot(time_fine, cf.sigmoid(time_fine, *_popt),'--')
+                            plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
+                            plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
+                            
+                            plt.title(fluo+' '+str(i)+' '+str(c))
+                            plt.show()
+                            
+                            answer = ask_question(question='is this the best popt?')
+                            these_popts.append(answer)
+                        else:
+                            these_popts.append(False)
+                    
+                else:
+                    if apoptotic_popts(*popts):
+                        plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
+                        plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
+                        plt.show()
+                        
+                        answer = ask_question(question='is this a good popt?')
+                        
+                        these_popts.append(answer)
+                    else:
+                        these_popts.append(False)
+            else:
+                these_popts.append(False)
+                
+            best_popts.append(these_popts)
+        df[fluo+'_best_popts'] = best_popts
+        
+        return df
+
+
+def set_popts(df):
+    for fluo in fluorophores:
+        bases = []
+        amps = []
+        rates = []
+        x0s = []
+        
+        for i in df.index:
+            popts = df[fluo+'_first_popts'][i]
+            best_popt = df[fluo+'_best_popts'][i]
+            if any(best_popt):
+                for popt, best in zip(popts, best_popt):
+                    if best:
+                        base, amplitude, rate, x0 = popt
+            else:
+                base, amplitude, rate, x0 = [np.nan]*4
+            
+            bases.append(base)
+            amps.append(amplitude)
+            rates.append(rate)
+            x0s.append(x0)
+        
+        df[fluo+'_amplitude'] = amps
+        df[fluo+'_base'] = bases
+        df[fluo+'_rate'] = rates
+        df[fluo+'_x0'] = x0s
+    return df
+
 #%% Execute for specific dfs
 
 old_noErode_df = general_fit(old_noErode_df, y_col='r_mean')
