@@ -251,11 +251,71 @@ def set_popts(df):
         df[fluo+'_x0'] = x0s
     return df
 
+
+def add_pre_post(df, col, colname):
+    for fluo in fluorophores:
+        posts = []
+        pres = []
+        for i in df.index:
+            if np.isfinite(df[fluo+'_base'][i]):
+                post = tf.post_region(df[fluo+'_x0'][i], df[fluo+'_rate'][i], df[fluo+'_'+col][i], timepoints)
+                pre  = tf.pre_region(df[fluo+'_x0'][i], df[fluo+'_rate'][i], df[fluo+'_'+col][i], timepoints)
+                mean_post = np.nanmean(post)
+                mean_pre  = np.nanmean(pre)
+                posts.append(mean_post)
+                pres.append(mean_pre)
+            else:
+                posts.append(np.nan)
+                pres.append(np.nan)
+        
+        df[fluo+'_'+colname+'_pre'] = pres
+        df[fluo+'_'+colname+'_pos'] = posts
+    return df
+
+
 #%% Execute for specific dfs
 
 old_noErode_df = general_fit(old_noErode_df, y_col='r_mean')
 
 
+#%% generate pdf with scatter of pre vs pos
+
+from matplotlib.backends.backend_pdf import PdfPages
+
+pp = PdfPages(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\preVSpos.pdf')
+
+for fluo in fluorophores:
+    plt.scatter(old_noErode_df[fluo+'_r_mean_pos'].values, old_noErode_df[fluo+'_r_mean_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' no erode old mean r')
+    pp.savefig()
+    plt.show()
+    
+    plt.scatter(old_noErode_df[fluo+'_r_from_i_pos'].values, old_noErode_df[fluo+'_r_from_i_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' no erode old r from mean i')
+    pp.savefig()
+    plt.show()
+    
+    plt.scatter(old_Erode_df[fluo+'_r_mean_pos'].values, old_Erode_df[fluo+'_r_mean_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' erode 5 old mean r')
+    pp.savefig()
+    plt.show()
+    
+    plt.scatter(old_Erode_df[fluo+'_r_from_i_pos'].values, old_Erode_df[fluo+'_r_from_i_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' erode 5 old r from mean i')
+    pp.savefig()
+    plt.show()
+    
+    plt.scatter(noErode_df[fluo+'_r_from_i_pos'].values, noErode_df[fluo+'_r_from_i_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' no erode new r from mean i')
+    pp.savefig()
+    plt.show()
+    
+    plt.scatter(Erode_df[fluo+'_r_from_i_pos'].values, Erode_df[fluo+'_r_from_i_pre'].values, color=Colors[fluo])
+    plt.title(fluo+' erode 5 new r from mean i')
+    pp.savefig()
+    plt.show()
+
+pp.close()
 #%% First windowed sigmoid fit to estimate parameters
 
 for fluo in fluorophores:
