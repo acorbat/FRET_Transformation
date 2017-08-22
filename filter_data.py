@@ -16,11 +16,11 @@ import Caspase_Fit as cf
 
 #%% import data
 
-noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newnoErode_df.pandas')
-old_noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
+noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\filtered_newnoErode_df.pandas')
+old_noErode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\filtered_noErode_df.pandas')
 
-Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_newErode_5_df.pandas')
-old_Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_Erode_5_df.pandas')
+Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\filtered_newErode_5_df.pandas')
+old_Erode_df = pd.read_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\filtered_Erode_5_df.pandas')
 
 
 #%% Define constants to be used
@@ -273,11 +273,6 @@ def add_pre_post(df, col, colname):
     return df
 
 
-#%% Execute for specific dfs
-
-old_noErode_df = general_fit(old_noErode_df, y_col='r_mean')
-
-
 #%% generate pdf with scatter of pre vs pos
 
 from matplotlib.backends.backend_pdf import PdfPages
@@ -316,93 +311,3 @@ for fluo in fluorophores:
     plt.show()
 
 pp.close()
-#%% First windowed sigmoid fit to estimate parameters
-
-for fluo in fluorophores:
-    this_popts = []
-    for i in data.index:
-        try:
-            #this_popt, _, _, _ = tf.windowFit(cf.sigmoid, data['r_'+fluo][i])
-            this_popt = tf.windowFit(cf.sigmoid, data['r_'+fluo][i])
-        except:
-            this_popt = [np.nan]*4
-        
-        this_popts.append(this_popt)
-        
-    data['first_popts_'+fluo] = this_popts
-
-#%% Ask which window fit corresponds
-
-for fluo in fluorophores:
-    best_popts = []
-    for i in data.index:
-        these_popts = []
-        popts = data['first_popts_'+fluo][i]
-        if not isinstance(popts[0], float):
-            c=0
-            for popt in popts:
-                c+=1
-                if apoptotic_popts(*popt):
-                    for _popt in popts:
-                        plt.plot(time_fine, cf.sigmoid(time_fine, *_popt),'--')
-                    plt.plot(time_coarse, data['r_'+fluo][i])
-                    plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
-                    
-                    plt.title(fluo+' '+str(i)+' '+str(c))
-                    plt.show()
-                    
-                    answer = ask_question(question='is this the best popt?')
-                    these_popts.append(answer)
-                else:
-                    these_popts.append(False)
-            best_popts.append(these_popts)
-        else:
-            if apoptotic_popts(*popts):
-                plt.plot(time_coarse, data['r_'+fluo][i])
-                plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
-                plt.show()
-                
-                answer = ask_question(question='is this a good popt?')
-                
-                these_popts.append(answer)
-            else:
-                these_popts.append(False)
-    
-    data['best_popts_'+fluo] = best_popts
-
-#%% Add 164 TFP, 0 mKate
-
-#%% Double 226 TFP, 376 TFP, 262 mKate, 684 mKate, 253 YFP, 291 YFP
-
-#%% Save best parameters
-
-for fluo in fluorophores:
-    bases = []
-    amplitudes = []
-    rates = []
-    x0s = []
-    for i in data.index:
-        these_popts = data['first_popts_'+fluo][i]
-        these_best = data['best_popts_'+fluo][i]
-        if any(these_best):
-            for is_best, popt in zip(these_best, these_popts):
-                if is_best:
-                    bases.append(popt[0])
-                    amplitudes.append(popt[1])
-                    rates.append(popt[2])
-                    x0s.append(popt[3])
-                    break
-        else:
-            bases.append(np.nan)
-            amplitudes.append(np.nan)
-            rates.append(np.nan)
-            x0s.append(np.nan)
-    
-    data[fluo+'_base'] = bases
-    data[fluo+'_amplitude'] = amplitudes
-    data[fluo+'_rate'] = rates
-    data[fluo+'_x0'] = x0s
-
-#%% Save file to pandas
-
-data.to_pickle('OneCaspFiltered.pandas')
