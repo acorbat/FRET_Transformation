@@ -355,3 +355,38 @@ for fluo in fluorophores:
     plt.show()
 
 pp.close()
+
+
+#%% save plot old vs new to pdf
+
+def plot_oldVSnew_pdf(pp, new_df, old_df):
+    for i in old_df.index:
+        if not all([all(np.isnan(old_df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
+            fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
+            for fluo in fluorophores:
+                axs[0].plot(time_coarse, old_df[fluo+'_r_mean'][i], Colors[fluo], label='old mean r '+fluo)
+                axs[0].plot(time_coarse, old_df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='old mean I '+fluo)
+                axs[0].plot(time_coarse, new_df[fluo+'_r_from_i'][i], Colors[fluo]+'-.', label='new mean I '+fluo)
+                axs[0].legend(loc=4)
+                axs[0].set_ylabel('Anisotropy')
+                
+                axs[1].plot(time_coarse, new_df[fluo+'_par_area'][i], Colors[fluo], label='area '+fluo)
+                axs[1].legend(loc=3)
+                axs[1].set_xlabel('time (min)')
+                axs[1].set_ylabel('Area (pxs)')
+            plt.suptitle(new_df['object'][i])
+            pp.savefig()
+            plt.show()
+            print(i)
+
+pp = PdfPages(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\oldVSnew_noErode.pdf')
+
+plot_oldVSnew_pdf(pp, noErode_df, old_noErode_df)
+
+pp.close()
+
+pp = PdfPages(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\oldVSnew_Erode.pdf')
+
+plot_oldVSnew_pdf(pp, Erode_df, old_Erode_df)
+
+pp.close()
