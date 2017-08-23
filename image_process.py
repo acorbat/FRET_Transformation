@@ -72,7 +72,7 @@ def shiftimage(im, shiftXY):
     im_shifted: the shifted image
     """
     if shiftXY[0] !=0 or shiftXY[1] !=0:
-                im = ndimage.shift(im, shiftXY, mode="nearest")
+                im = ndimage.shift(im, shiftXY)
                 
     return im
     
