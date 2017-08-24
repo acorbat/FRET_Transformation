@@ -37,6 +37,9 @@ time_fine = np.arange(0, 90*timepoints)
 #%% calculate r from mean par and per
 
 def r_from_i_to_df(df):
+    """
+    Calculates anistropy from par_mean and per_mean values for each fluorophore.
+    """
     for fluo in fluorophores:
         this_rs = []
         for i in df.index:
@@ -49,6 +52,9 @@ def r_from_i_to_df(df):
 #%% Plot results
 
 def plot_all_curves(df):
+    """
+    Plots anisotropy from mean anisotropy and from mean intensity of all fluorophores for all objects.
+    """
     for i in df.index:
         if not all([all(np.isnan(df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
             for fluo in fluorophores:
@@ -63,6 +69,10 @@ def plot_all_curves(df):
 
 
 def plot_curves_and_areas(df):
+    """
+    Plots anisotropy from mean anisotropy and from mean intensity of all fluorophores for all objects,
+    as well as the area of the cell.
+    """
     for i in df.index:
         if not all([all(np.isnan(df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
             fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
@@ -71,7 +81,7 @@ def plot_curves_and_areas(df):
                 axs[0].plot(time_coarse, df[fluo+'_r_from_i'][i], Colors[fluo]+'--', label='mean I '+fluo)
                 axs[0].legend(loc=4)
                 
-                axs[1].plot(time_coarse, df[fluo+'_par_area'][i]-df[fluo+'_par_nanpixs'][i], Colors[fluo], label='area '+fluo)
+                axs[1].plot(time_coarse, df[fluo+'_par_area'][i], Colors[fluo], label='area '+fluo)
                 axs[1].legend(loc=3)
             plt.suptitle(df['object'][i])
             plt.show()
@@ -79,6 +89,10 @@ def plot_curves_and_areas(df):
 
 
 def plot_oldVSnew(new_df, old_df):
+    """
+    Plots anisotropy from mean anisotropy and from mean intensities of the old method from old_df,
+    superposed to anistropy from intensities of the new method. Subplot of area is added.
+    """
     for i in old_df.index:
         if not all([all(np.isnan(old_df[fluo+'_r_mean'][i])) for fluo in fluorophores]):
             fig, axs = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
@@ -96,6 +110,10 @@ def plot_oldVSnew(new_df, old_df):
 
 
 def plot_all_curves_withFit(df):
+    """
+    Plots anisotropy from mean anisotropy and from mean intensities of the old method from old_df,
+    superposed to sigmoid fit chosen.
+    """
     for i in df.index:
         if any([df[fluo+'_ok_1'][i] for fluo in fluorophores]):
             for fluo in fluorophores:
@@ -114,12 +132,18 @@ def plot_all_curves_withFit(df):
 #%% Useful Functions
 
 def apoptotic_popts(base, amplitude, rate, x0):
+    """
+    Quick checks that parameters of sigmoid are within possible range.
+    """
     if base>0.1 and base<0.5 and amplitude>0.001 and amplitude<0.5 and rate>0 and x0>0:
         return True
     else:
         return False
 
-def ask_question(question='?'):    
+def ask_question(question='?'):
+    """
+    Asks yes/no question to user. If answered incorrectly 3 times, it raises ValueError.
+    """
     c= 0
     while c<=3:
         response = input(question)
@@ -136,6 +160,9 @@ def ask_question(question='?'):
 #%% Prepare first fit and filter
 
 def general_fit(df, y_col='r_from_i'):
+    """
+    Applies sigmoid window fit to all fluorophores y_col curves and saves it to dataframe first_popts.
+    """
     for fluo in fluorophores:
         this_popts = []
         for i in df.index:
@@ -152,7 +179,10 @@ def general_fit(df, y_col='r_from_i'):
 
 
 def first_filter(df, col_to_filter='r_from_i'):
-    # All fluorophores need to be plotted to understand better what to filter
+    """
+    Asks whether a curve is apoptotic or not taking into consideration if there is any plausible apoptic popt in first_popts
+    while showing a plot of all fluorophores with all its sigmoid fits. col_to_filter is the curve plotted.
+    """
     for fluo in fluorophores:
         ok_1 = []
         for i in df.index:
@@ -177,6 +207,9 @@ def first_filter(df, col_to_filter='r_from_i'):
 
 
 def second_filter(df, col_to_filter='r_from_i'):
+    """
+    Sweeps through the accepted as apoptotic curves asking which of the plausible popts is the best.
+    """
     for fluo in fluorophores:
         best_popts = []
         for i in df.index:
@@ -224,6 +257,9 @@ def second_filter(df, col_to_filter='r_from_i'):
 
 
 def set_popts(df):
+    """
+    sets the last best popt chosen as the parameters of the sigmoid fit.
+    """
     for fluo in fluorophores:
         bases = []
         amps = []
@@ -253,6 +289,10 @@ def set_popts(df):
 
 
 def add_pre_post(df, col, colname):
+    """
+    Uses sigmoid parameters to estimate mean pre and post values of col curve.
+    colname is the suffix of the new column where results are saved.
+    """
     for fluo in fluorophores:
         posts = []
         pres = []

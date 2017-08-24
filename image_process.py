@@ -19,7 +19,7 @@ from skimage.morphology import erosion
 def prepareBGimages(par, perp, parBG, perpBG, sigma=5):
     """
     smothes the BG images and the correction images and bg substracts the correction
-    images
+    images.
     
     
     
@@ -192,10 +192,10 @@ def threshimages(par, perp, thresh):
     
     
     
-def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50):
+def correct_images(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50):
     """
-    calculate the anisotropy and fluorescent image from parallel 
-    and perpendicular images
+    Applies background correction, under and overexposed correction, G factor correction
+    and shift correction to par and perp images.
     
     Parameters
     ----------
@@ -212,11 +212,9 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     Returns
     -------
     
-    fluorescence: image of fluorescence (parallel + 2 * perpendicular)
+    par: corrected parallel image
     
-    anisotropy: image of anisotropy (parallel - perpendicuar / fluorescence)
-    
-    background: tuple of backgroundvalues for parallel and perpendicular images
+    perp: corrected perpendicular image
         
     """
     par = par.astype(np.float32) 
@@ -258,6 +256,9 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
 
 
 def my_shift(img, shift_x=0, shift_y=0):
+    """
+    Own coarse pixel shift function.
+    """
     shape = img.shape
     shifted = np.zeros(shape)
     shifted.fill(0)
@@ -277,6 +278,33 @@ def my_shift(img, shift_x=0, shift_y=0):
 
 
 def prepare_mask(par, per, mask, shiftXY=(0, 0)):
+    """
+    Prepares both par and per masks to be used taking into consideration only pixels
+    present in both images.
+    
+    First it takes out from the mask nan pixels of par image, then it shifts shiftXY
+    to match perpendicular image and takes out nan pixels from mask. This mask corresponds 
+    to the per mask, while its -shiftXY shift is the par mask. This is done in order not to
+    consider pixels on the borders that can't be found on the other image.
+    
+    Parameters
+    ----------
+    par : array_like
+        Array of the parallel intensity corrected image.
+    per : array_like
+        Array of the perpendicular intensity corrected image.
+    mask : array_like
+        Array of the labeled mask.
+    shiftXY : tuple, optional
+        tuple containing the y and x shift to be applied to the mask.
+    
+    Returns
+    -------
+    mask_par : array_like, int
+        Array of the mask to be applied to parallel images.
+    mask_per : array_like, int
+        Array of the mask to be applied to perpendicular images.
+    """
     mask[np.isnan(par)] = 0
     shiftXY = (round(-shiftXY[0]), round(-shiftXY[1]))
     mask = mask.astype(np.float32)
@@ -287,6 +315,25 @@ def prepare_mask(par, per, mask, shiftXY=(0, 0)):
 
 
 def extract_attributes(img, mask, suffix='img'):
+    """
+    Generates a dataframe containing mean, std, 25 and 75 percentile, area and nan area
+    of each label in an image. label is saved to object column and position is 
+    hard coded to 30.
+    
+    Parameters
+    ----------
+    img : Array-like
+        image from which to extract features.
+    mask : Array-like
+        labeled mask to be applied.
+    suffix : string, optional
+        suffix to be used for the column names. Default is img.
+    
+    Returns
+    -------
+    df : pandas dataframe
+        contains the information for each object in the image.
+    """
     df = []
     for num in range(1, mask.max()+1):
         img_crop = img.copy()
@@ -306,6 +353,9 @@ def extract_attributes(img, mask, suffix='img'):
     return df
 
 def generate_df(par_df, per_df, r_df, f_df):
+    """
+    Merges all par, per, r and f dataframes on position, object and timepoint.
+    """
     all_df = pd.merge(par_df, per_df, how='outer', on=['position', 'object', 'timepoint'])
     all_df = all_df.merge(r_df, how='outer', on=['position', 'object', 'timepoint'])
     all_df = all_df.merge(f_df, how='outer', on=['position', 'object', 'timepoint'])
@@ -314,9 +364,43 @@ def generate_df(par_df, per_df, r_df, f_df):
 
 #%% Generate all i_par, i_per, anisotropy and fluorescence images
 
-def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=False):
+def process_images(Files, BG_Files, G_Files, Mask_Files, erode=None, fast=False):
+    """
+    Opens all files and manages the processing of all images in the series.
+    
+    It opens the series of images and for each timepoint it applies the correction, 
+    then the feature extraction and finally merges and concatenates all dataframes into 
+    a single one.
+    
+    Parameters
+    ----------
+    Files : dictionary
+        Dictionary containing path to time series of images where keys 
+        are [fluo, orientation].
+    BG_Files : dictionary
+        Dictionary containing path to background correction images where keys 
+        are [fluo, orientation].
+    G_Files : dictionary
+        Dictionary containing path to G factor correction images where keys 
+        are [fluo, orientation].
+    Mask_Files : dictionary
+        Dictionary containing path to G factor correction images where keys 
+        are timepoints.
+    erode : int, optional
+        number of erosion iterations to be applied to mask. Default is None.
+    fast : boolean, optional
+        if set to true only 10, 11, 30 and 32 objects are analyzed. Defaults
+        to False.
+    
+    Returns
+    -------
+    df : Pandas DataFrame
+        Dataframe containing the information of each object for each timepoint
+        separately.
+    """
     df = pd.DataFrame()
     for fluo in fluorophores:
+        print(fluo)
         ser_par = np.asarray(tif.imread(str(Files[fluo, 'par'])), dtype=float)
         ser_per = np.asarray(tif.imread(str(Files[fluo, 'per'])), dtype=float)
         
@@ -328,7 +412,7 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
         
         all_df = []
         for t, (par, per) in enumerate(zip(ser_par, ser_per)):
-            par, per =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
+            par, per =  correct_images(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
             print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
             mask = tif.imread(str(Mask_Files[t]))
             if erode is not None:
@@ -353,8 +437,24 @@ def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=Fals
             df = all_df
     return df
 
+
 #%% group timepoints extracted
 def group_cell(df, xbase='timepoint', groupby=['position', 'object']):
+    """
+    Takes the DataFrame that contains all information separately and groups it so
+    as to have time series of each feature.
+    
+    Parameters
+    ----------
+    df :  Pandas DataFrame
+        Dataframe containing all the information of the different objects and 
+        timepoints.
+    xbase : string, optional
+        Name of the column that orders the time series. Defaults to timepoint.
+    groupby : list of strings
+        list of strings along which objects must be grouped by. Defaults to 
+        ['position', 'object'].
+    """
     cols = [col for col in df.columns if col not in groupby]
     
     tpmax = df[xbase].max()
@@ -399,7 +499,7 @@ Mask_Files = {t: masks_folder.joinpath('o_30_'+str(t)+'.tiff') for t in range(0,
 
 #%% Execute specific cases
 
-noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=False)
+noErode_df = process_images(Files, BG_Files, G_Files, Mask_Files, fast=False)
 
 noErode_df = group_cell(noErode_df)
 
