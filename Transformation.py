@@ -18,7 +18,36 @@ import Caspase_Fit as cf
 
 # Define region selector Functions
 
-def sigmoid_region(Curve_x0, Curve_rate, Curve, timepoints=10, length=90, minimal = 0.01, n_min = 5, n_max = 15):
+def sigmoid_region(Curve_x0, Curve_rate, Curve, timepoints=10, minimal = 0.01, n_min = 5, n_max = 15):
+    """
+    Gets the sigmoid curve section and its index according to sigmoid fit parameters.
+    
+    Parameters
+    ----------
+    Curve_x0 : value
+        x0 sigmoid fit parameter.
+    Curve_rate : value
+        rate of sigmoid.
+    Curve : list
+        list of values from where curve section must be taken.
+    timepoints : value
+        temporal difference between points in the curve. Default is 10.
+    minimal : value
+        value at which normalized sigmoid curve is considered constant. 
+        Smaller values mean larger sections. Default is 0.01.
+    n_min : int
+        Minimum length of curve section. Default is 5.
+    n_max : int
+        Maximum length of curve section. Default is 15.
+    
+    Returns
+    -------
+    Curve_Section : list
+        Section of the curve that corresponds to the sigmoid region.
+    index : int
+        index of the first element of the curve section in curve.
+    """
+    length = len(Curve)
     time = np.arange(0, timepoints*length, timepoints)
     Value = min(time, key=lambda x:abs(x-Curve_x0))
     index = np.where(time==Value)
@@ -42,7 +71,34 @@ def sigmoid_region(Curve_x0, Curve_rate, Curve, timepoints=10, length=90, minima
     return Curve_Section, index
 
 
-def post_region(Curve_x0, Curve_rate, Curve, timepoints=10, length=90, minimal = 0.01, n_min = 5, n_max = 15):
+def post_region(Curve_x0, Curve_rate, Curve, timepoints=10, minimal = 0.01, n_min = 5, n_max = 15):
+    """
+    Based on sigmoid region, gets the 10 points following the curve section.
+    
+    Parameters
+    ----------
+    Curve_x0 : value
+        x0 sigmoid fit parameter.
+    Curve_rate : value
+        rate of sigmoid.
+    Curve : list
+        list of values from where curve section must be taken.
+    timepoints : value
+        temporal difference between points in the curve. Default is 10.
+    minimal : value
+        value at which normalized sigmoid curve is considered constant. 
+        Smaller values mean larger sections. Default is 0.01.
+    n_min : int
+        Minimum length of curve section. Default is 5.
+    n_max : int
+        Maximum length of curve section. Default is 15.
+    
+    Returns
+    -------
+    Curve_Section : list
+        10 first elements following curve section if possible.
+    """
+    length = len(Curve)
     time = np.arange(0, timepoints*length, timepoints)
     Value = min(time, key=lambda x:abs(x-Curve_x0))
     index = np.where(time==Value)
@@ -57,7 +113,34 @@ def post_region(Curve_x0, Curve_rate, Curve, timepoints=10, length=90, minimal =
     Curve_Section = Curve[index:index+10]
     return Curve_Section
 
-def pre_region(Curve_x0, Curve_rate, Curve, timepoints=10, length=90, minimal = 0.01, n_min = 5, n_max = 15):
+def pre_region(Curve_x0, Curve_rate, Curve, timepoints=10, minimal = 0.01, n_min = 5, n_max = 15):
+    """
+    Based on sigmoid region, gets the 10 points following the curve section.
+    
+    Parameters
+    ----------
+    Curve_x0 : value
+        x0 sigmoid fit parameter.
+    Curve_rate : value
+        rate of sigmoid.
+    Curve : list
+        list of values from where curve section must be taken.
+    timepoints : value
+        temporal difference between points in the curve. Default is 10.
+    minimal : value
+        value at which normalized sigmoid curve is considered constant. 
+        Smaller values mean larger sections. Default is 0.01.
+    n_min : int
+        Minimum length of curve section. Default is 5.
+    n_max : int
+        Maximum length of curve section. Default is 15.
+    
+    Returns
+    -------
+    Curve_Section : list
+        10 first elements preceding curve section if possible.
+    """
+    length = len(Curve)
     time = np.arange(0, timepoints*length, timepoints)
     Value = min(time, key=lambda x:abs(x-Curve_x0))
     index = np.where(time==Value)
