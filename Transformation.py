@@ -98,6 +98,7 @@ def post_region(Curve_x0, Curve_rate, Curve, timepoints=10, minimal = 0.01, n_mi
     Curve_Section : list
         10 first elements following curve section if possible.
     """
+    # This function could actually call sigmoid region and decide from there
     length = len(Curve)
     time = np.arange(0, timepoints*length, timepoints)
     Value = min(time, key=lambda x:abs(x-Curve_x0))
@@ -164,9 +165,13 @@ def pre_region(Curve_x0, Curve_rate, Curve, timepoints=10, minimal = 0.01, n_min
 
 #Define normalizing function
 def Normalize(vect):
-    vect -= min(vect)
-    vect /= max(vect)
-    return vect
+    """
+    Returns a normalization of vect from 0 to 1.
+    """
+    this_vect = vect[:]
+    this_vect -= min(this_vect)
+    this_vect /= max(this_vect)
+    return this_vect
 
 #%% Define function to check if a curve is a possible apoptosis curve
 
