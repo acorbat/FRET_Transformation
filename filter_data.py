@@ -134,6 +134,11 @@ def plot_all_curves_withFit(df):
 def apoptotic_popts(base, amplitude, rate, x0):
     """
     Quick checks that parameters of sigmoid are within possible range.
+    
+    0.1<base<0.5
+    0.001<amplitude<0.5
+    0<rate
+    0<x0
     """
     if base>0.1 and base<0.5 and amplitude>0.001 and amplitude<0.5 and rate>0 and x0>0:
         return True
