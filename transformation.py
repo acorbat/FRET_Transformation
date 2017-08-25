@@ -176,6 +176,9 @@ def Normalize(vect):
 #%% Define function to check if a curve is a possible apoptosis curve
 
 def is_apoptosis(df, fluo, maximum_cond, minimum_cond, timepoints=10):
+    """
+    (Deprecated) Checks some parameters to detect curves that are not apoptotic.
+    """
     if df.finitepoints.values<=20:
         return False
     if np.isnan(df['r_'+fluo].values[0]).all():
@@ -201,6 +204,30 @@ def is_apoptosis(df, fluo, maximum_cond, minimum_cond, timepoints=10):
 #%% Define function to correct inadequate sigmoid fit
 
 def ReFit(df, index, fluorophore, timepoints=10, Plot=True, p0=None):
+    """
+    Takes dataframe and re fits with a sigmoid the specified index and fluorophore
+    returning the new set of popts.
+    
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        Dataframe of the complete experiment.
+    index : index
+        Index of the row that is to be re-analyzed.
+    fluorophore : string
+        Fluorophore name of the curve that is to be refitted.
+    timepoints : float, optional
+        Timespan of the curve. Defaults to 10.
+    Plot : boolean, optional
+        If True, the old and new fit is plotted alongside the curve. Default is False.
+    p0 : list of floats, optional
+        Initial paramters for the non linear fit. Defaults to None.
+    
+    Returns
+    -------
+    new_popt : list of floats
+        [base, amplitude, rate, x0] of the new sigmoid fit.
+    """
     x = np.arange(0, 90*timepoints, timepoints)
     y = df['r_'+fluorophore][index]
     
@@ -222,6 +249,34 @@ def ReFit(df, index, fluorophore, timepoints=10, Plot=True, p0=None):
     return new_popt
 
 def windowFit(func, y, x=None, timepoints=10, windowsize=30, windowstep=10):
+    """
+    Performs succesive fits with func in the windowed curve y, with window size windowsize
+    and window step windowstep. Returns a list with the popts for each window.
+    
+    Take into consideration that windowsize will set a maximum for the rates that can 
+    be fitted adequately. windowstep should be smaller thatn windowsize in order to avoid
+    the possibility that half a sigmoid is in one window and the other half in another.
+    
+    Parameters
+    ----------
+    func : function
+        Function used to fit.
+    y : Array-like, list
+        Curve to be fitted.
+    x : Array-like, list, optional
+        x curve for y data. Default is None. Makes timepoints unnecessary if given.
+    timepoints : float, optional
+        Time span of the y curve. Default is 10.
+    windowsize : int, optional
+        Amount of points to be taken into the window for fitting. Default is 30
+    windowstep : int, optional
+        Step for the traslation of each window generated.
+    
+    Returns
+    -------
+    popts : list of list of floats
+        List containing the popts returned for each windowed fit.
+    """
     if x is None:
         x = np.arange(y.shape[0])
         x = x * timepoints
@@ -258,6 +313,36 @@ def windowFit(func, y, x=None, timepoints=10, windowsize=30, windowstep=10):
 
 
 def nanfit(func, ydata, xdata=None, timepoints=10, returnfit=False, p0=None):
+    """
+    Fits function func to ydata ignoring nans.
+    
+    Parameters
+    ----------
+    func : function
+        Function used to fit.
+    ydata : Array-like, list
+        Curve to be fitted
+    xdata : Array-like, list
+        x curve for the y curve. Defaults to None. If None, timepoints is used to generate
+        an equispaced vector.
+    timepoints : float
+        Time span of the y curve. Defaults to 10. Ignored if xdata is given.
+    returnfit : boolean, optional
+        If True, returns fitline and resline
+    p0 : list of floats, optional
+        Initial parameters to be used in non linear fit.
+    
+    Returns
+    -------
+    popt : Array-like
+        Parameters returned from non linear fit.
+    pcov : Array-like
+        Covariance matrix from fit.
+    fitline : tuple of curves, optional
+        If returnfit, returns a tuple of xdata and fit result.
+    resline : tuple of curves, optional
+        If returnfit, returns a tuple of xdata and fit result residues.
+    """
     if xdata is None:
         xdata = np.arange(ydata.shape[0])
         xdata = xdata * timepoints
@@ -287,6 +372,9 @@ def nanfit(func, ydata, xdata=None, timepoints=10, returnfit=False, p0=None):
 
 # Define fitting function for crossed intensities
 def Fit_Global(df, Am1, Am2, Ad1, Ad2, fluo, timepoints=10, length=90, minimal = 0.001, n_min=5, n_max=15, Plot = False):
+    """
+    (Dprecated: see Fit_Global_r)
+    """
     # Concatenate curves
     pars = []
     pers = []
@@ -398,7 +486,50 @@ def Fit_Global(df, Am1, Am2, Ad1, Ad2, fluo, timepoints=10, length=90, minimal =
 
 # Define fitting function for normalized crossed intensities using experimental b
 
-def Fit_Global_r(df, Am1, Am2, Ad1, Ad2, b_min, b_max, fluo, timepoints=10, length=90, minimal = 0.001, n_min=5, n_max=15, Plot = False):
+def Fit_Global_r(df, Am1, Am2, Ad1, Ad2, b_min, b_max, fluo, timepoints=10, minimal = 0.001, n_min=5, n_max=15, Plot = False):
+    """
+    Optimizes the transformation of anisotropy curves to monomer fraction curves, 
+    fitting for the best monomer and dimer anisotropies and brightness relation.
+    
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        DataFrame of the whole experiment with the anisotropy curves of each fluorophore.
+    Am1 : float
+        Minimum possible value for monomer anisotropy.
+    Am2 : float
+        Maximum possible value for monomer anisotropy.
+    Ad1 : float
+        Minimum possible value for dimer anisotropy.
+    Ad2 : float
+        Maximum possible value for dimer anisotropy.
+    b_min : float
+        Minimum possible value for brightness relation.
+    b_max : float
+        Maximum possible value for brightness relation.
+    fluo : string
+        fluorophore to optimize.
+    timepoints : float, optional
+        Time span of curves. Defaults to 10.
+    minimal : float, optional
+        Parameter passed to sigmoid region function and represents the value where 
+        sigmoid is considered constant. Default is 0.001.
+    n_min : int, optional
+        Parameter passed to sigmoid region to select minimum amount of points for a 
+        sigmoid region. Default is 5.
+    n_max : int, optional
+        Parameter passed to sigmoid region to select maximum amount of points for a 
+        sigmoid region. Default is 15.
+    Plot : boolean, optional
+        If True, plots graphs showing results of the transformation.
+    
+    Returns
+    -------
+    Sol : Dictionary
+        Dictionary containing {'Am': monomer anisotropy, 'Ad': dimer anisotropy,
+        'b': brightness relation, 'm': monomer fraction curve} for the row passed 
+        in DataFrame or makes a fit for every row in DataFrame (didn't work).
+    """
     # Concatenate curves
     pars = []
     pers = []
@@ -497,6 +628,7 @@ def Fit_Global_r(df, Am1, Am2, Ad1, Ad2, b_min, b_max, fluo, timepoints=10, leng
             plt.ylabel('Anisotropía')
             plt.show()
     
+    length = len(parallel)
     ms = np.concatenate((np.zeros(start_time), ms, np.ones(length-len(ms)-start_time)))
     Sol = {'Am': Am, 'Ad': Ad, 'b': b, 'm': ms}
     
