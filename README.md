@@ -10,5 +10,5 @@ This package contains typical functions used to translate intensity values to an
 
 This package contains typical functions used to treat the anisotropy curves such as sigmoid region selectors, transformation from anisotropy to monomer fraction curves and its parameters optimization.
 
-Needs numpy, scipy.optimize, anisotropy_functions and caspase_fit.
+Needs numpy, scipy.optimize, matplotlib, anisotropy_functions and caspase_fit.
 
