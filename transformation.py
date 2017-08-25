@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from scipy.optimize import curve_fit
 
-import Anisotropy_Functions as af
-import Caspase_Fit as cf
+import anisotropy_functions as af
+import caspase_fit as cf
 
 # Define region selector Functions
 

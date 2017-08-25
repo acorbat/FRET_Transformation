@@ -7,9 +7,9 @@ Created on Fri Aug  4 15:49:25 2017
 import numpy as np
 import matplotlib.pyplot as plt
 
-import Anisotropy_Functions as af
-import Transformation as tf
-import Caspase_Fit as cf
+import anisotropy_functions as af
+import transformation as tf
+import caspase_fit as cf
 
 
 #%% Define constants to be used
