@@ -274,9 +274,9 @@ def simulate(t, t_0, rate, k, func='sig'):
     
     simulation.set_initial_value(x0, t0).set_f_params(params, func)
     
-    C = []
-    S = []
-    P = []
+    C = [x0[0]]
+    S = [x0[1]]
+    P = [x0[2]]
     
     for this_t in t[1:]:
         if simulation.successful():
