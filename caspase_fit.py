@@ -233,7 +233,7 @@ def rhs(t, x, params, function='sig'):
     
     return xp
 
-def simulate(max_time, t_0, rate, k, func='sig'):
+def simulate(t, t_0, rate, k, func='sig'):
     """
     Simulates the enzyme, substrate and product system with the given parameters. max_time 
     is the maximum time of simulation, t_0 the mid point of enzyme apparition, rate is the rate at which enzyme 
@@ -242,8 +242,9 @@ def simulate(max_time, t_0, rate, k, func='sig'):
     
     Parameters
     ----------
-    max_time : integer
-        maximum timeof simulation
+    t : list, array-like
+        time vector to be used for simulation. Special consideration for length
+        and dt must be taken.
     t_0 : float
         Parameter for enzyme apparition function representing half apparition.
     rate : float
@@ -267,29 +268,33 @@ def simulate(max_time, t_0, rate, k, func='sig'):
     simulation = ode(rhs).set_integrator('dopri5')
     
     x0 = [0, 0.5, 0]
-    t0 = 0
+    t0 = t[0]
     
     params = [t_0, rate/100, k/100]
     
     simulation.set_initial_value(x0, t0).set_f_params(params, func)
-    dt = 1
     
     C = []
     S = []
     P = []
     
-    while simulation.successful() and simulation.t < max_time:
-        simulation.integrate(simulation.t+dt)
-        c, s, p = simulation.y[0], simulation.y[1], simulation.y[2]
-        C.append(c)
-        S.append(s)
-        P.append(p)
+    for this_t in t[1:]:
+        if simulation.successful():
+            simulation.integrate(this_t)
+            c, s, p = simulation.y[0], simulation.y[1], simulation.y[2]
+            C.append(c)
+            S.append(s)
+            P.append(p)
+        else:
+            print('simulation aborted')
+            break
     
     C = np.asarray(C)
     S = np.asarray(S)
     P = np.asarray(P)
     
     return C, S, P
+
 
 def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix_rate=None, fix_k=None):
     """
