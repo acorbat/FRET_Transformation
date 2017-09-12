@@ -60,7 +60,7 @@ Colors = {'1':'g', '2':'r', '3':'y'}
 Concentrations = {'0':'0', '1':'10', '2':'100', '3':'1000', '4':'10000'}
 
 result_path = this_dir.joinpath('results')
-pdf_path = result_path.joinpath('parameter_fit.pdf')
+pdf_path = result_path.joinpath('parameter_fit_gompertz.pdf')
 pp = PdfPages(str(pdf_path))
 
 def Plot_Caspases(df):
@@ -88,9 +88,56 @@ params.add('t_0', value=100, min=1, max=1000)
 params.add('k', value=1, min=1e-5, max=900)
 params.add('rate', value=1, min=1e-5, max=900)
 
-plt.figure(figsize=(7,5))
-pp.attach_note(lmfit.printfuncs.fit_report(params), positionRect=[450, 450, 300, 300])
-pp.savefig()
+def residual_model(params, t, data_prod, data_casp):
+    
+    casp, subs, prod = model.eval(params, t=t)
+    res = [np.abs(this_prod - this_data_prod) + np.abs(this_casp - this_data_casp) if this_data_prod>0.9 
+           else (np.abs(this_prod - this_data_prod) + np.abs(this_casp - this_data_casp))/0.25 
+           for (this_prod, this_casp, this_data_prod, this_data_casp) in zip(prod, casp, data_prod, data_casp)]
+    return res
+
+def residual(params, t, data_prod):
+    
+    casp, subs, prod = model.eval(params, t=t, func='ta')
+    res = [this_prod - this_data_prod if this_data_prod>0.9 
+           else (this_prod - this_data_prod)/0.25 
+           for (this_prod, this_data_prod) in zip(prod, data_prod)]
+    return res
+
+
+#%% First do all three caspase fit with caspase and product
+
+casp_params = {}    
+for casp in Caspases.keys():
+    casp_params[Caspases[casp]] = lmfit.Parameters()
+    casp_params[Caspases[casp]].add('t_0', value=100, min=1, max=1000)
+    casp_params[Caspases[casp]].add('k', value=1, min=1e-5, max=300)
+    casp_params[Caspases[casp]].add('rate', value=1, min=1e-5, max=300)
+    
+    time = df['cas'+casp+'_time'].values[0]
+    data_sens = df['cas'+casp+'_sens'].values[0]
+    data_casp = df['cas'+casp+'_casp'].values[0]
+    
+    mini = lmfit.Minimizer(residual_model, params, fcn_args=(time, data_sens, data_casp))
+    
+    best = mini.minimize()
+    casp_params[Caspases[casp]] = best.params
+    
+    plt.plot(time, data_sens, label='sens')
+    plt.plot(time, model.eval(best.params, t=time)[2], label='fit sens')
+    
+    plt.plot(time, data_casp, label='casp')
+    plt.plot(time, model.eval(best.params, t=time)[0], label='fit casp')
+    
+    plt.xlabel('time (min.)')
+    plt.ylabel('active fraction')
+    plt.xlim((50, 300))
+    plt.legend(loc=4)
+    plt.title(Caspases[casp])
+    
+    pp.attach_note(lmfit.printfuncs.fit_report(best), positionRect=[100, 100, 100, 100])
+    pp.savefig()
+    plt.close()
 
 #%% close pdf
 
