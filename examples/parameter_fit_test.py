@@ -8,6 +8,7 @@ Created on Mon Sep 11 16:57:12 2017
 # import packages to be used
 import os
 import pathlib
+import itertools
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,7 +16,7 @@ import lmfit
 from matplotlib.backends.backend_pdf import PdfPages
 
 # import not registered modules
-this_dir = pathlib.Path(os.getcwd())
+this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Modelling')
 #os.chdir(r'C:\Users\Admin\Documents\Agus\Imaging three sensors\FRET_Transformation')
 os.chdir(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\FRET_Transformation')
 import caspase_fit as cf
@@ -80,17 +81,11 @@ def Plot_Caspases(df):
 Plot_Caspases(df)
 
 #%% Generate models and fits
-
 model = lmfit.Model(cf.simulate)
-
-params = lmfit.Parameters()
-params.add('t_0', value=100, min=1, max=1000)
-params.add('k', value=1, min=1e-5, max=900)
-params.add('rate', value=1, min=1e-5, max=900)
 
 def residual_model(params, t, data_prod, data_casp):
     
-    casp, subs, prod = model.eval(params, t=t)
+    casp, subs, prod = model.eval(params, t=t, func='gom')
     res = [np.abs(this_prod - this_data_prod) + np.abs(this_casp - this_data_casp) if this_data_prod>0.9 
            else (np.abs(this_prod - this_data_prod) + np.abs(this_casp - this_data_casp))/0.25 
            for (this_prod, this_casp, this_data_prod, this_data_casp) in zip(prod, casp, data_prod, data_casp)]
@@ -98,36 +93,54 @@ def residual_model(params, t, data_prod, data_casp):
 
 def residual(params, t, data_prod):
     
-    casp, subs, prod = model.eval(params, t=t, func='ta')
+    casp, subs, prod = model.eval(params, t=t, func='gom')
     res = [this_prod - this_data_prod if this_data_prod>0.9 
            else (this_prod - this_data_prod)/0.25 
            for (this_prod, this_data_prod) in zip(prod, data_prod)]
     return res
 
+def fit(res_func, time_estimate, time, data_sens, data_casp=None):
+    params = lmfit.Parameters()
+    params.add('t_0', value=time_estimate, min=1, max=1000)
+    params.add('k', value=0.1, min=1e-5, max=900)
+    params.add('rate', value=0.1, min=1e-5, max=900)
+    
+    if data_casp is not None:
+        mini = lmfit.Minimizer(residual_model, params, fcn_args=(time, data_sens, data_casp))
+    else:
+        mini = lmfit.Minimizer(residual, params, fcn_args=(time, data_sens))
+    
+    best = mini.minimize()
+    
+    Other_Initial_parameters = [10, 50]
+    for param in itertools.permutations(Other_Initial_parameters):
+        params['k'].value = param[0]
+        params['rate'].value = param[1]
+        
+        this_best = mini.minimize()
+        
+        if this_best.chisqr<best.chisqr:
+            best = this_best
+        
+    return best
+    
 
 #%% First do all three caspase fit with caspase and product
 
 casp_params = {}    
 for casp in Caspases.keys():
-    casp_params[Caspases[casp]] = lmfit.Parameters()
-    casp_params[Caspases[casp]].add('t_0', value=100, min=1, max=1000)
-    casp_params[Caspases[casp]].add('k', value=1, min=1e-5, max=300)
-    casp_params[Caspases[casp]].add('rate', value=1, min=1e-5, max=300)
-    
     time = df['cas'+casp+'_time'].values[0]
     data_sens = df['cas'+casp+'_sens'].values[0]
     data_casp = df['cas'+casp+'_casp'].values[0]
     
-    mini = lmfit.Minimizer(residual_model, params, fcn_args=(time, data_sens, data_casp))
-    
-    best = mini.minimize()
+    best = fit(residual_model, 100, time, data_sens, data_casp=data_casp)
     casp_params[Caspases[casp]] = best.params
     
     plt.plot(time, data_sens, label='sens')
-    plt.plot(time, model.eval(best.params, t=time)[2], label='fit sens')
+    plt.plot(time, model.eval(best.params, t=time, func='gom')[2], label='fit sens')
     
     plt.plot(time, data_casp, label='casp')
-    plt.plot(time, model.eval(best.params, t=time)[0], label='fit casp')
+    plt.plot(time, model.eval(best.params, t=time, func='gom')[0], label='fit casp')
     
     plt.xlabel('time (min.)')
     plt.ylabel('active fraction')
