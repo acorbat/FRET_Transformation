@@ -143,7 +143,7 @@ res_path = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving\results')
 
 for win, pol in itertools.product(windows, polys):
     if win>pol:
-        df = pd.read_pickle('OneCaspFiltered.pandas')
+        df = pd.read_pickle('2017-09-15_OneCaspFiltered.pandas')
         
         filename = 'OneCasp_derivations_win%02d_pol%02d.pdf' % (win, pol)
         pandasname = 'OneCasp_derivations_win%02d_pol%02d.pandas' % (win, pol)
