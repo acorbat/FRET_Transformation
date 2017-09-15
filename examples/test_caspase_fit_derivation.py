@@ -36,8 +36,10 @@ Colors = {'YFP':'y', 'mKate':'r', 'TFP':'g'}
 #%% Define function to find maximum complex peaks
 
 def replace_nan(curve):
+    """Replaces values in curve with a linear interpolation and discards nans 
+    at the beginning and end of the list."""
     curve = pd.Series(curve)
-    curve.interpolate(method="linear")
+    curve = curve.interpolate(method="linear")
     
     curve = curve.values
     curve = curve[np.isfinite(curve)]
@@ -45,13 +47,21 @@ def replace_nan(curve):
 
 
 def get_max_ind(compl):
-    #TODO: need corrections because it's not working
-    compl = compl[:]
+    """Finds index of max without considering the beginning and ending of 
+    vector"""
+    compl = compl.copy()
     ind_max = np.where(compl==np.max(compl))[0]
-    while len(compl)==(ind_max+1) and len(compl)>1:
-        compl = compl[:-1]
+    ini = 0
+    while (any(ind_max==0) or any((ind_max+1)==len(compl))) and len(compl)>1:
+        if any(ind_max==0):
+            ini +=1
+            compl = np.delete(compl, 0)
+        elif any((ind_max+1)==len(compl)):
+            compl = np.delete(compl, -1)    
         ind_max = np.where(compl==np.max(compl))[0]
-    return ind_max
+    
+    ind_max = np.where(compl==np.max(compl))[0][0]
+    return ind_max + ini
 
     
 def find_complex(df, pp, window=13, poly=6):
