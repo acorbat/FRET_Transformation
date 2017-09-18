@@ -66,6 +66,38 @@ def get_max_ind(compl):
 
     
 def find_complex(df, pp, window=13, poly=6):
+    """
+    Takes the whole dataframe and applies a Savitzky-Golay filter to smooth 
+    data and find the derivative of the sigmoid region anisotropy data 
+    of filtered curves.
+    
+    This function first selects the sigmoid region of the data, does a linear 
+    interpolation over missing data, replacing with nearest at end and 
+    beginning of curves. Savitzky Golay filter is used to smooth the data 
+    curve and then find the first derivative. Spline interpolation is used to 
+    find maximum at the derivative curve. Maximum cannot be found at the
+    beginning and ending of curves (this is usually caused by interpolation) so
+    these values are discarded.
+    
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        DataFrame containing the curves for each fluorophores, the best fit 
+        values, which are used to filter the curves as well.
+    pp : matplotlib backend PdfPages Object
+        Used to save the resulting figures with the maximum values found.
+    window : optional, odd int
+        data points to be used for Savitzky Golay filter. Default is 13
+    poly : optional, int smaller than window
+        polinomial order to be used in Savitsky Golay filter. Has to be smaller
+        than window. Default is 6
+    
+    Returns
+    -------
+    df : Pandas DataFrame
+        Updated Pandas DataFrame
+    Also updates (not generates) the pdf with the results.
+    """
     time = np.arange(0, 50*timepoints, timepoints)
     fils = {}
     ders = {}
@@ -158,6 +190,36 @@ for win, pol in itertools.product(windows, polys):
 #%% Try finite differences for derivation
 
 def find_complex(df, pp, order=5):
+    """
+    Takes the whole dataframe and applies finite differences to data in order 
+    to find the derivative of the sigmoid region anisotropy data of filtered 
+    curves.
+    
+    This function first selects the sigmoid region of the data, does a linear 
+    interpolation over missing data, replacing with nearest at end and 
+    beginning of curves. Finite differencesis is used to find data the first 
+    derivative, and filter noise. Spline interpolation is used to 
+    find maximum at the derived curve. Maximum cannot be found at the
+    beginning and ending of curves (this is usually caused by interpolation) so
+    these values are discarded.
+    
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        DataFrame containing the curves for each fluorophores, the best fit 
+        values, which are used to filter the curves as well.
+    pp : matplotlib backend PdfPages Object
+        Used to save the resulting figures with the maximum values found.
+    order : optional, odd int
+        Number of points to be used in the finite differences. Must be odd.
+        Default is 5.
+    
+    Returns
+    -------
+    df : Pandas DataFrame
+        Updated Pandas DataFrame
+    Also updates (not generates) the pdf with the results.
+    """
     time = np.arange(0, 50*timepoints, timepoints)
     ders = {}
     maxs = {}
