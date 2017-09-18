@@ -187,7 +187,8 @@ def find_complex(df, pp, order=5):
                         ind = np.clip(ind, 0, len(r_reg)-1)
                         return r_reg[ind]
                     
-                    r_der = derivative(this_vect, this_time, dx=timepoints, order=order)
+                    this_inds = np.arange(0, len(r_reg)*timepoints, timepoints)
+                    r_der = derivative(this_vect, this_inds, dx=timepoints, order=order)
                     
                     t = np.arange(ind*timepoints, (ind+len(r_reg))*timepoints)
                     f = splrep(this_time, r_der, k=3, s=0)
