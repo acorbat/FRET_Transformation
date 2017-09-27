@@ -22,10 +22,10 @@ from scipy.stats import ttest_rel
 
 # import not registered modules
 #this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Analysis')
-this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Deriving')
-#this_dir = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving')
-os.chdir(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\FRET_Transformation')
-#os.chdir(r'D:\Agus\Imaging three sensors\FRET_Transformation')
+#this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Deriving')
+this_dir = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving')
+#os.chdir(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\FRET_Transformation')
+os.chdir(r'D:\Agus\Imaging three sensors\FRET_Transformation')
 import anisotropy_functions as af
 import transformation as tf
 import caspase_fit as cf
@@ -122,7 +122,7 @@ def find_complex(df, pp, window=13, poly=6):
                 x0 = df[fluo+'_x0'][i]
                 rate = df[fluo+'_rate'][i]
                 
-                r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.00001)
+                r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01)
                 r_reg = replace_nan(r_reg)
                 this_time = time[ind:ind+len(r_reg)]
                 
@@ -239,41 +239,35 @@ def find_complex(df, pp, order=5):
             if np.isfinite(df[fluo+'_rate'][i]):
                 
                 r = df['r_'+fluo][i]
-                x0 = df[fluo+'_x0'][i]
-                rate = df[fluo+'_rate'][i]
+                r = replace_nan(r)
                 
-                r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.00001)
-                r_reg = r
-                ind = 0
-                r_reg = replace_nan(r_reg)
-                this_time = time[ind:ind+len(r_reg)]
-                
-                if all(np.isfinite(r_reg)) and len(r_reg)>1:
+                if all(np.isfinite(r)) and len(r)>1:
                     plot = True
                     
                     def this_vect(t):
                         ind = t//timepoints
-                        ind = np.clip(ind, 0, len(r_reg)-1)
-                        return r_reg[ind]
+                        ind = np.clip(ind, 0, len(r)-1)
+                        return r[ind]
                     
-                    this_inds = np.arange(0, len(r_reg)*timepoints, timepoints)
-                    #r_der = derivative(this_vect, this_inds, dx=timepoints, order=order)
-                    r_der = myderivative(r_reg, timepoints, n=1, order=order)
-                    print(r_der)
-                    t = np.arange(ind*timepoints, (ind+len(r_reg))*timepoints)
-                    f = splrep(this_time, r_der, k=3, s=0)
+                    this_inds = np.arange(0, (len(r))*timepoints, timepoints)
+                    r_der = derivative(this_vect, this_inds, dx=timepoints, order=order)
+                    
+                    t = np.arange(0, len(r)*timepoints)
+                    f = splrep(this_inds, r_der, k=3, s=0)
                     der_interp = splev(t, f, der=0)
                     
-                    try:
-                        max_act = get_max_ind(der_interp)+ind*timepoints
-                    except Exception as e:
-                        print(e)
-                        max_act = 0
+                    x0 = df[fluo+'_x0'][i]
+                    rate = df[fluo+'_rate'][i]
+                    r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01)
+                    this_time = time[ind:ind+len(r_reg)]
+                    
+                    max_act = get_max_ind(der_interp[ind:ind+len(r_reg)]) + ind*timepoints
                     
                     axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
+                    axs[0].plot(this_inds, r, Colors[fluo]+'--', alpha=0.5)
                     axs[0].set_ylabel('fraction')
                     
-                    axs[1].plot(this_time, r_der)
+                    axs[1].plot(this_inds, r_der)
                     axs[1].plot(t, der_interp)
                     axs[1].set_ylabel('complex')
                     axs[1].set_xlabel('time (min.)')
