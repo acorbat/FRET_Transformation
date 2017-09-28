@@ -500,5 +500,6 @@ def plot_queryed(query):
         if plot:
             plt.show()
             for Differences_tag in Differences_tags:
-                print('Deriving difference of %s: %.0d' % (Differences_tag, df[Differences_tag][i]))
-                print('Anisotropy difference of %s: %.0d' % (Differences_tag, df['r_'+Differences_tag][i]))
+                if np.isfinite(df[Differences_tag][i]) and np.isfinite(df['r_'+Differences_tag][i]):
+                    print('Deriving difference of %s: %.0d' % (Differences_tag, df[Differences_tag][i]))
+                    print('Anisotropy difference of %s: %.0d' % (Differences_tag, df['r_'+Differences_tag][i]))
