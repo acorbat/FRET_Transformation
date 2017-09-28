@@ -44,11 +44,16 @@ Colors = {'YFP':'y', 'mKate':'r', 'TFP':'g'}
 def replace_nan(curve):
     """Replaces values in curve with a linear interpolation and discards nans 
     at the beginning and end of the list."""
+    # First we interpolate linearly in the middle points
     curve = pd.Series(curve)
     curve = curve.interpolate(method="linear")
     
+    # Then we find nearest finite number to fill beggining and end
     curve = curve.values
-    curve = curve[np.isfinite(curve)]
+    ind = np.where(~np.isnan(curve))[0]
+    first, last = ind[0], ind[-1]
+    curve[:first] = curve[first]
+    curve[last + 1:] = curve[last]
     return curve
 
 
@@ -251,11 +256,10 @@ def find_complex(df, pp, order=5):
                         ind = np.clip(ind, 0, len(r)-1)
                         return r[ind]
                     
-                    this_inds = np.arange(0, (len(r))*timepoints, timepoints)
-                    r_der = derivative(this_vect, this_inds, dx=timepoints, order=order)
+                    r_der = derivative(this_vect, time, dx=timepoints, order=order)
                     
                     t = np.arange(0, len(r)*timepoints)
-                    f = splrep(this_inds, r_der, k=3, s=0)
+                    f = splrep(time, r_der, k=3, s=0)
                     der_interp = splev(t, f, der=0)
                     
                     x0 = df[fluo+'_x0'][i]
@@ -266,10 +270,10 @@ def find_complex(df, pp, order=5):
                     max_act = get_max_ind(der_interp[ind*timepoints:(ind+len(r_reg))*timepoints]) + ind*timepoints
                     
                     axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
-                    axs[0].plot(this_inds, r, Colors[fluo]+'--', alpha=0.5)
+                    axs[0].plot(time, r, Colors[fluo]+'--', alpha=0.5)
                     axs[0].set_ylabel('fraction')
                     
-                    axs[1].plot(this_inds, r_der)
+                    axs[1].plot(time, r_der)
                     axs[1].plot(t, der_interp, Colors[fluo])
                     axs[1].set_ylabel('complex')
                     axs[1].set_xlabel('time (min.)')
