@@ -264,7 +264,7 @@ def find_complex(df, pp, order=5):
                     
                     x0 = df[fluo+'_x0'][i]
                     rate = df[fluo+'_rate'][i]
-                    r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01)
+                    r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
                     this_time = time[ind:ind+len(r_reg)]
                     
                     max_act = get_max_ind(der_interp[ind*timepoints:(ind+len(r_reg))*timepoints]) + ind*timepoints
@@ -483,7 +483,7 @@ def ttest(df):
             print('Cannot say that means are different')
         else:
             print('means are different with at least 90% confidence')
-            this_mean = np.mean(np.abs(this_v(r_Differences_tag))- np.abs(this_v(Differences_tag)))
+            this_mean = np.mean(np.abs(this_v(r_Differences_tag)))- np.mean(np.abs(this_v(Differences_tag)))
             if this_mean>0:
                 print('Caspase fitting method is better for '+str(this_mean)+' minutes')
             else:
