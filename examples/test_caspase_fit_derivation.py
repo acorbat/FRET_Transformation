@@ -174,6 +174,8 @@ def find_complex(df, pp, window=13, poly=6):
         
     return df
 
+#%%
+
 windows = [3, 9, 13]
 polys = [3, 4, 6]
 res_path = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving\results')
@@ -332,7 +334,7 @@ def nanhist(data, title='histogram', bins=10):
     plt.title(title)
 
 
-this_order = 5
+this_order = 3
 pandasname = 'OneCasp_derivations_order%02d.pandas' % (this_order)
 pandas_path = res_path.joinpath(pandasname)
 df = pd.read_pickle(str(pandas_path))
@@ -463,7 +465,7 @@ df = add_differences_r(df)
 for Differences_tag in Differences_tags:
     r_Differences_tag = 'r_'+Differences_tag
     nanhist(df[Differences_tag].values, bins=20)
-    nanhist(df[r_Differences_tag].values, bins=20)
+    nanhist(df[r_Differences_tag].values, bins=20, title=Differences_tag)
     plt.show()
     statistic, p_value = ttest_rel(np.abs(v_(r_Differences_tag)), np.abs(v_(Differences_tag)))
     print('p-value of '+Differences_tag+' is '+str(p_value))
@@ -476,3 +478,23 @@ for Differences_tag in Differences_tags:
             print('Caspase fitting method is better for '+str(this_mean)+' minutes')
         else:
             print('Anisotropy fitting method is better for '+str(-this_mean)+' minutes')
+
+
+#%% Query curves to see errors
+
+def plot_queryed(query):
+    time = np.arange(0, 50*timepoints, timepoints)
+    
+    for i in df.query(query).index:
+        plot = False
+        for fluo in fluorophores:
+            if np.isfinite(df[fluo+'_rate'][i]):
+                plot = True
+                plt.plot(time, df['r_'+fluo][i], Colors[fluo])
+                print('object: %d and fluo: %s' % (i, fluo))
+                print('max complex at: %.0d; half r at: %.0d' % (df[fluo+'_max_activity'][i], df[fluo+'_r_50'][i]))
+        if plot:
+            plt.show()
+            for Differences_tag in Differences_tags:
+                print('Deriving difference of %s: %.0d' % (Differences_tag, df[Differences_tag][i]))
+                print('Anisotropy difference of %s: %.0d' % (Differences_tag, df['r_'+Differences_tag][i]))
