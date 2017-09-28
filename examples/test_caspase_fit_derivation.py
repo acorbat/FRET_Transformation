@@ -338,8 +338,8 @@ def nanhist(data, title='histogram', bins=10):
     plt.title(title)
 
 
-this_order = 3
-pandasname = 'OneCasp_derivations_order%02d.pandas' % (this_order)
+this_order = 5
+pandasname = r'reduced_sig\OneCasp_derivations_order%02d.pandas' % (this_order)
 pandas_path = res_path.joinpath(pandasname)
 df = pd.read_pickle(str(pandas_path))
 
@@ -466,22 +466,28 @@ def add_differences_r(df):
 df = find_r_percent(df)
 df = add_differences_r(df)
 
-for Differences_tag in Differences_tags:
-    r_Differences_tag = 'r_'+Differences_tag
-    nanhist(df[Differences_tag].values, bins=20)
-    nanhist(df[r_Differences_tag].values, bins=20, title=Differences_tag)
-    plt.show()
-    statistic, p_value = ttest_rel(np.abs(v_(r_Differences_tag)), np.abs(v_(Differences_tag)))
-    print('p-value of '+Differences_tag+' is '+str(p_value))
-    if p_value>0.1:
-        print('Cannot say that means are different')
-    else:
-        print('means are different with at least 90% confidence')
-        this_mean = np.mean(np.abs(v_(r_Differences_tag))- np.abs(v_(Differences_tag)))
-        if this_mean>0:
-            print('Caspase fitting method is better for '+str(this_mean)+' minutes')
+#%% Evaluate with paired t test wich method is best
+
+def ttest(df):
+    
+    def this_v(desc):
+        return df[desc].values[np.isfinite(df[desc].values)]
+    for Differences_tag in Differences_tags:
+        r_Differences_tag = 'r_'+Differences_tag
+        nanhist(df[Differences_tag].values, bins=20)
+        nanhist(df[r_Differences_tag].values, bins=20, title=Differences_tag)
+        plt.show()
+        statistic, p_value = ttest_rel(np.abs(this_v(r_Differences_tag)), np.abs(this_v(Differences_tag)))
+        print('p-value of '+Differences_tag+' is '+str(p_value))
+        if p_value>0.1:
+            print('Cannot say that means are different')
         else:
-            print('Anisotropy fitting method is better for '+str(-this_mean)+' minutes')
+            print('means are different with at least 90% confidence')
+            this_mean = np.mean(np.abs(this_v(r_Differences_tag))- np.abs(this_v(Differences_tag)))
+            if this_mean>0:
+                print('Caspase fitting method is better for '+str(this_mean)+' minutes')
+            else:
+                print('Anisotropy fitting method is better for '+str(-this_mean)+' minutes')
 
 
 #%% Query curves to see errors
