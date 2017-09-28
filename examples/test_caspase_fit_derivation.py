@@ -261,14 +261,14 @@ def find_complex(df, pp, order=5):
                     r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01)
                     this_time = time[ind:ind+len(r_reg)]
                     
-                    max_act = get_max_ind(der_interp[ind:ind+len(r_reg)]) + ind*timepoints
+                    max_act = get_max_ind(der_interp[ind*timepoints:(ind+len(r_reg))*timepoints]) + ind*timepoints
                     
                     axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
                     axs[0].plot(this_inds, r, Colors[fluo]+'--', alpha=0.5)
                     axs[0].set_ylabel('fraction')
                     
                     axs[1].plot(this_inds, r_der)
-                    axs[1].plot(t, der_interp)
+                    axs[1].plot(t, der_interp, Colors[fluo])
                     axs[1].set_ylabel('complex')
                     axs[1].set_xlabel('time (min.)')
                     
@@ -456,6 +456,9 @@ def add_differences_r(df):
         df[Differences_tag] = Differences[Differences_tag]
     
     return df
+
+df = find_r_percent(df)
+df = add_differences_r(df)
 
 for Differences_tag in Differences_tags:
     r_Differences_tag = 'r_'+Differences_tag
