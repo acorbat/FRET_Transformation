@@ -441,7 +441,7 @@ def process_images(Files, BG_Files, G_Files, Mask_Files, erode=None, fast=False)
         separately.
     """
     df = pd.DataFrame()
-    fluorophores = [key[0] for key in Files.keys()]
+    fluorophores = set([key[0] for key in Files.keys()])
     for fluo in fluorophores:
         print(fluo)
         ser_par = np.asarray(tif.imread(str(Files[fluo, 'par'])), dtype=float)
@@ -478,5 +478,5 @@ def process_images(Files, BG_Files, G_Files, Mask_Files, erode=None, fast=False)
             df = df.merge(all_df, how='outer', on=['position', 'object', 'timepoint'])
         except KeyError:
             df = all_df
-        df = group_cell(df)
+    df = group_cell(df)
     return df
