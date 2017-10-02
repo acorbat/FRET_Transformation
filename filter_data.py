@@ -84,6 +84,7 @@ def general_fit(df, y_col='r_from_i'):
                 this_popt = tf.windowFit(cf.sigmoid, df[fluo+'_'+y_col][i])
             except:
                 this_popt = [np.nan]*4
+                this_popt = [this_popt]
             
             this_popts.append(this_popt)
             
