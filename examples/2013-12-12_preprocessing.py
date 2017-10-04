@@ -17,7 +17,7 @@ os.chdir(this_dir)
 #%% load data
 
 working_path = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\old_data')
-data_path = working_path.joinpath('2013-12-12.pandas')
+#data_path = working_path.joinpath('2013-12-12.pandas')
 
 df = pd.read_pickle(str(data_path))
 
@@ -41,3 +41,8 @@ df.to_pickle(str(save_path))
 #%% Choose best popts
 
 df = fd.second_filter(df, col_to_filter='r')
+
+#%% save best popts data
+
+save_path = working_path.joinpath('2017-10-03_best_popts_2013-12-12.pandas')
+df.to_pickle(str(save_path))
