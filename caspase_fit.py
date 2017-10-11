@@ -341,8 +341,8 @@ def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix
     #deltams = Normalize(deltams)
     max_temp = len(m)*timepoints
     
-    time_coarse = np.arange(0, len(m)*timepoints, timepoints)
-    time_fine = np.arange(0, len(m)*timepoints)
+    time_coarse = np.arange(0, max_temp, timepoints)
+    time_fine = np.arange(0, max_temp)
     
     def chi_2(params):
         t_0, rate, k = params[0], params[1], params[2]
@@ -351,7 +351,7 @@ def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix
         if fix_k is not None:
             k = fix_k
         
-        casp, sens, prod = simulate(max_temp, t_0, rate, k, func=function)
+        casp, sens, prod = simulate(time_fine, t_0, rate, k, func=function)
         
         out = 0.    
         for n, m in enumerate(ms):
@@ -376,7 +376,7 @@ def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix
     mini = minimize(chi_2, x0=Initial_parameters, bounds=bounds)#, options = option)
     
     t_0, rate, k = mini.x[0], mini.x[1], mini.x[2]
-    casp, sens, prod = simulate(max_temp, t_0, rate, k)
+    casp, sens, prod = simulate(time_fine, t_0, rate, k)
     
     chi = chi_2([t_0, rate, k])
     #option = {'maxiter' : 5}
@@ -385,7 +385,7 @@ def fit_caspase(m, time_estimate, function='sig', timepoints=10, Plot=False, fix
         mini = minimize(chi_2, x0=Initial_parameters, bounds=bounds)#, options = option)
         
         this_t_0, this_rate, this_k = mini.x[0], mini.x[1], mini.x[2]
-        this_casp, this_sens, this_prod = simulate(max_temp, t_0, rate, k)
+        this_casp, this_sens, this_prod = simulate(time_fine, t_0, rate, k)
         _chi = chi_2([this_t_0, this_rate, this_k])
         
         if _chi<chi:
