@@ -7,8 +7,6 @@ Created on Wed Aug  2 12:22:11 2017
 #%% Import packages to be used
 import numpy as np
 import pandas as pd
-import itertools as it
-import pathlib
 import tifffile as tif
 
 from scipy import ndimage
@@ -19,7 +17,7 @@ from skimage.morphology import erosion
 def prepareBGimages(par, perp, parBG, perpBG, sigma=5):
     """
     smothes the BG images and the correction images and bg substracts the correction
-    images
+    images.
     
     
     
@@ -192,10 +190,10 @@ def threshimages(par, perp, thresh):
     
     
     
-def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50):
+def correct_images(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50):
     """
-    calculate the anisotropy and fluorescent image from parallel 
-    and perpendicular images
+    Applies background correction, under and overexposed correction, G factor correction
+    and shift correction to par and perp images.
     
     Parameters
     ----------
@@ -212,11 +210,9 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     Returns
     -------
     
-    fluorescence: image of fluorescence (parallel + 2 * perpendicular)
+    par: corrected parallel image
     
-    anisotropy: image of anisotropy (parallel - perpendicuar / fluorescence)
-    
-    background: tuple of backgroundvalues for parallel and perpendicular images
+    perp: corrected perpendicular image
         
     """
     par = par.astype(np.float32) 
@@ -229,7 +225,10 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     
     # remove overexposed areas
     par[np.where(par > 4080)] = np.nan
-    perp[np.where(perp > 4080)] = np.nan # ndimage.shift screws up nans
+    perp[np.where(perp > 4080)] = np.nan
+    
+    # threshold the images #should it be before or after corrections to perp)
+    par, perp = threshimages(par, perp, 100)
     
     # remove background
     if isinstance(bg, tuple):
@@ -251,18 +250,93 @@ def calculate_anisotropy(par, perp, Gfactor=1, shiftXY=(0,0), bg=None, thresh=50
     par -= bg_par
     perp -= bg_perp
     
-    # calculate fluorescence 
-    fluorescence = par + 2 * perp
     
-    # threshold the images
-    par, perp = threshimages(par, perp, thresh) # Runtimewarning
+    # threshold the images #should it be before or after corrections to perp)
+    par, perp = threshimages(par, perp, thresh)
     
-    # calculate the anisotropy
-    aniso = (par - perp) / fluorescence
     
-    return fluorescence, aniso, (bg_par, bg_perp), par, perp
+    return par, perp
+
+
+def my_shift(img, shift_x=0, shift_y=0):
+    """
+    Own coarse pixel shift function.
+    """
+    shape = img.shape
+    shifted = np.zeros(shape)
+    shifted.fill(0)
+    
+    dest_y_min = np.clip(shift_y, 0, shape[0])
+    dest_y_max = np.clip(shape[0]+shift_y, 0, shape[0])
+    dest_x_min = np.clip(shift_x, 0, shape[1])
+    dest_x_max = np.clip(shape[1]+shift_x, 0, shape[1])
+    
+    orig_y_min = np.clip(-shift_y, 0, shape[0])
+    orig_y_max = np.clip(shape[0]-shift_y, 0, shape[0])
+    orig_x_min = np.clip(-shift_x, 0, shape[1])
+    orig_x_max = np.clip(shape[1]-shift_x, 0, shape[1])
+    shifted[dest_y_min:dest_y_max, dest_x_min:dest_x_max] = img[orig_y_min:orig_y_max, orig_x_min:orig_x_max]
+    
+    return shifted
+
+
+def prepare_mask(par, per, mask, shiftXY=(0, 0)):
+    """
+    Prepares both par and per masks to be used taking into consideration only pixels
+    present in both images.
+    
+    First it takes out from the mask nan pixels of par image, then it shifts shiftXY
+    to match perpendicular image and takes out nan pixels from mask. This mask corresponds 
+    to the per mask, while its -shiftXY shift is the par mask. This is done in order not to
+    consider pixels on the borders that can't be found on the other image.
+    
+    Parameters
+    ----------
+    par : array_like
+        Array of the parallel intensity corrected image.
+    per : array_like
+        Array of the perpendicular intensity corrected image.
+    mask : array_like
+        Array of the labeled mask.
+    shiftXY : tuple, optional
+        tuple containing the y and x shift to be applied to the mask.
+    
+    Returns
+    -------
+    mask_par : array_like, int
+        Array of the mask to be applied to parallel images.
+    mask_per : array_like, int
+        Array of the mask to be applied to perpendicular images.
+    """
+    mask[np.isnan(par)] = 0
+    shiftXY = (round(-shiftXY[0]), round(-shiftXY[1]))
+    mask = mask.astype(np.float32)
+    mask_per = shiftimage(mask, shiftXY=shiftXY)
+    mask_per[np.isnan(per)] = 0
+    mask_par = shiftimage(mask_per, shiftXY=(-shiftXY[0], -shiftXY[1]))
+    return mask_par.astype(int), mask_per.astype(int)
+
 
 def extract_attributes(img, mask, suffix='img'):
+    """
+    Generates a dataframe containing mean, std, 25 and 75 percentile, area and nan area
+    of each label in an image. label is saved to object column and position is 
+    hard coded to 30.
+    
+    Parameters
+    ----------
+    img : Array-like
+        image from which to extract features.
+    mask : Array-like
+        labeled mask to be applied.
+    suffix : string, optional
+        suffix to be used for the column names. Default is img.
+    
+    Returns
+    -------
+    df : pandas dataframe
+        contains the information for each object in the image.
+    """
     df = []
     for num in range(1, mask.max()+1):
         img_crop = img.copy()
@@ -282,58 +356,32 @@ def extract_attributes(img, mask, suffix='img'):
     return df
 
 def generate_df(par_df, per_df, r_df, f_df):
+    """
+    Merges all par, per, r and f dataframes on position, object and timepoint.
+    """
     all_df = pd.merge(par_df, per_df, how='outer', on=['position', 'object', 'timepoint'])
     all_df = all_df.merge(r_df, how='outer', on=['position', 'object', 'timepoint'])
     all_df = all_df.merge(f_df, how='outer', on=['position', 'object', 'timepoint'])
     return all_df
 
 
-#%% Generate all i_par, i_per, anisotropy and fluorescence images
-
-def process_images(Files, BG_Files, G_Files, masks_folder, erode=None, fast=False):
-    df = pd.DataFrame()
-    for fluo in fluorophores:
-        ser_par = np.asarray(tif.imread(str(Files[fluo, 'par'])), dtype=float)
-        ser_per = np.asarray(tif.imread(str(Files[fluo, 'per'])), dtype=float)
-        
-        BG_par = np.asarray(tif.imread(str(BG_Files[fluo, 'par'])), dtype=float)
-        BG_per = np.asarray(tif.imread(str(BG_Files[fluo, 'per'])), dtype=float)
-        
-        G_par = np.asarray(tif.imread(str(G_Files[fluo, 'par'])), dtype=float)
-        G_per = np.asarray(tif.imread(str(G_Files[fluo, 'per'])), dtype=float)
-        
-        all_df = []
-        for t, (par, per) in enumerate(zip(ser_par, ser_per)):
-            fluorescence, aniso, (bg_par, bg_perp), par, per =  calculate_anisotropy(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
-            print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
-            mask = tif.imread(str(Mask_Files[t]))
-            if erode is not None:
-                for j in range(erode):
-                    mask = erosion(mask)
-            if fast:
-                for num in range(1, mask.max()+1):
-                    if num not in [10, 11, 30, 32]:
-                        mask[mask==num] = 0
-            par_df = extract_attributes(par, mask, suffix=fluo+'_par')
-            per_df = extract_attributes(per, mask, suffix=fluo+'_per')
-            r_df = extract_attributes(aniso, mask, suffix=fluo+'_r')
-            f_df = extract_attributes(fluorescence, mask, suffix=fluo+'_f')
-            
-            par_df['timepoint'] = t
-            per_df['timepoint'] = t
-            r_df['timepoint'] = t
-            f_df['timepoint'] = t
-            this_all_df = generate_df(par_df, per_df, r_df, f_df)
-            all_df.append(this_all_df)
-        all_df = pd.concat(all_df, ignore_index=True)
-        try:
-            df = df.merge(all_df, how='outer', on=['position', 'object', 'timepoint'])
-        except KeyError:
-            df = all_df
-    return df
-
 #%% group timepoints extracted
 def group_cell(df, xbase='timepoint', groupby=['position', 'object']):
+    """
+    Takes the DataFrame that contains all information separately and groups it so
+    as to have time series of each feature.
+    
+    Parameters
+    ----------
+    df :  Pandas DataFrame
+        Dataframe containing all the information of the different objects and 
+        timepoints.
+    xbase : string, optional
+        Name of the column that orders the time series. Defaults to timepoint.
+    groupby : list of strings
+        list of strings along which objects must be grouped by. Defaults to 
+        ['position', 'object'].
+    """
     cols = [col for col in df.columns if col not in groupby]
     
     tpmax = df[xbase].max()
@@ -361,32 +409,80 @@ def group_cell(df, xbase='timepoint', groupby=['position', 'object']):
     return df_out
 
 
-#%% Load image
+#%% Generate all i_par, i_per, anisotropy and fluorescence images
 
-fluorophores = ['YFP', 'mKate', 'TFP']
-orientations = ['par', 'per']
+def process_images(Files, BG_Files, G_Files, Mask_Files, erode=None, fast=False):
+    """
+    Opens all files and manages the processing of all images in the series.
+    
+    It opens the series of images and for each timepoint it applies the correction, 
+    then the feature extraction and finally merges and concatenates all dataframes into 
+    a single one.
+    
+    Parameters
+    ----------
+    Files : dictionary
+        Dictionary containing path to time series of images where keys 
+        are [fluo, orientation].
+    BG_Files : dictionary
+        Dictionary containing path to background correction images where keys 
+        are [fluo, orientation].
+    G_Files : dictionary
+        Dictionary containing path to G factor correction images where keys 
+        are [fluo, orientation].
+    Mask_Files : dictionary
+        Dictionary containing path to G factor correction images where keys 
+        are timepoints.
+    erode : int, optional
+        number of erosion iterations to be applied to mask. Default is None.
+    fast : boolean, optional
+        if set to true only 10, 11, 30 and 32 objects are analyzed. Defaults
+        to False.
+    
+    Returns
+    -------
+    df : Pandas DataFrame
+        Dataframe containing the information of each object for each timepoint
+        separately.
+    """
+    df = pd.DataFrame()
+    fluorophores = set([key[0] for key in Files.keys()])
+    for fluo in fluorophores:
+        print(fluo)
+        ser_par = np.asarray(tif.imread(str(Files[fluo, 'par'])), dtype=float)
+        ser_per = np.asarray(tif.imread(str(Files[fluo, 'per'])), dtype=float)
+        
+        BG_par = np.asarray(tif.imread(str(BG_Files[fluo, 'par'])), dtype=float)
+        BG_per = np.asarray(tif.imread(str(BG_Files[fluo, 'per'])), dtype=float)
+        
+        G_par = np.asarray(tif.imread(str(G_Files[fluo, 'par'])), dtype=float)
+        G_per = np.asarray(tif.imread(str(G_Files[fluo, 'per'])), dtype=float)
+        
+        all_df = []
+        for t, (par, per) in enumerate(zip(ser_par, ser_per)):
+            par, per =  correct_images(par, per, Gfactor=(G_par, G_per), shiftXY=(11.7,-0.6), bg=(BG_par, BG_per))
+            print('Analyzing timepoint %d of %d' % (t, len(ser_par)))
+            mask = tif.imread(str(Mask_Files[t]))
+            if erode is not None:
+                for j in range(erode):
+                    mask = erosion(mask)
+            if fast:
+                for num in range(1, mask.max()+1):
+                    if num not in [10, 11, 30, 32]:
+                        mask[mask==num] = 0
+            mask_par, mask_per = prepare_mask(par, per, mask, shiftXY=(11.7,-0.6))
+            par_df = extract_attributes(par, mask_par, suffix=fluo+'_par')
+            per_df = extract_attributes(per, mask_per, suffix=fluo+'_per')
+            
+            par_df['timepoint'] = t
+            per_df['timepoint'] = t
+            this_all_df = pd.merge(par_df, per_df, how='outer', on=['position', 'object', 'timepoint'])
+            all_df.append(this_all_df)
+        all_df = pd.concat(all_df, ignore_index=True)
+        try:
+            df = df.merge(all_df, how='outer', on=['position', 'object', 'timepoint'])
+        except KeyError:
+            df = all_df
 
-general_folder = pathlib.Path(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30')
-corrections_folder = general_folder.joinpath('Correction_20131212')
-masks_folder = general_folder.joinpath('masks')
-
-Files = {a: general_folder.joinpath('pos30_'+'_'.join(a)+'.TIF') for a in it.product(fluorophores, orientations)}
-BG_Files = {a: corrections_folder.joinpath('1'+'_'.join(a)+'_BG.tif') for a in it.product(fluorophores, orientations)}
-G_Files = {a: corrections_folder.joinpath('1'+'_'.join(a)+'.tif') for a in it.product(fluorophores, orientations)}
-Mask_Files = {t: masks_folder.joinpath('o_30_'+str(t)+'.tiff') for t in range(0,90)}
-
-
-#%% Execute specific cases
-
-noErode_df = process_images(Files, BG_Files, G_Files, masks_folder, fast=False)
-
-noErode_df = group_cell(noErode_df)
-
-noErode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_noErode_df.pandas')
-
-erode = 5
-Erode_df = process_images(Files, BG_Files, G_Files, masks_folder, erode=erode, fast=False)
-
-Erode_df = group_cell(Erode_df)
-
-Erode_df.to_pickle(r'D:\Agus\Imaging three sensors\aniso_para_agustin\20131212_pos30\pos30_Erode_'+str(erode)+'_df.pandas')
+    df = group_cell(df)
+    return df
