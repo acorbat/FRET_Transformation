@@ -22,10 +22,10 @@ from scipy.stats import ttest_rel
 
 # import not registered modules
 #this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Analysis')
-#this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Deriving')
-this_dir = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving')
-#os.chdir(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\FRET_Transformation')
-os.chdir(r'D:\Agus\Imaging three sensors\FRET_Transformation')
+this_dir = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\Deriving')
+#this_dir = pathlib.Path(r'D:\Agus\Imaging three sensors\Deriving')
+os.chdir(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\FRET_Transformation')
+#os.chdir(r'D:\Agus\Imaging three sensors\FRET_Transformation')
 import anisotropy_functions as af
 import transformation as tf
 import caspase_fit as cf
@@ -380,15 +380,24 @@ plt.show()
 
 #%% Scatter plots of temporality, pearson should give an idea of how well determined time is
 
-for fluo1, fluo2 in itertools.combinations(fluorophores, 2):
-    x = df[fluo1+'_max_activity'].values
-    y = df[fluo2+'_max_activity'].values
-    mask = [True if np.isfinite(this_x) and np.isfinite(this_y) else False for this_x, this_y in zip(x,y)]
-    x = x[mask]
-    y = y[mask]
-    plt.scatter(x, y)
-    plt.title(str(np.corrcoef(x, y)))
-    plt.show()
+def plot_scatter(df):
+    for fluo1, fluo2 in itertools.combinations(fluorophores, 2):
+        x = df[fluo1+'_max_activity'].values
+        y = df[fluo2+'_max_activity'].values
+        mask = [True if np.isfinite(this_x) and np.isfinite(this_y) else False for this_x, this_y in zip(x,y)]
+        x = x[mask]
+        y = y[mask]
+        plt.scatter(x, y, alpha=0.5)
+        aa1 = np.corrcoef(x, y)[0, 1]
+        x = df[fluo1+'_r_50'].values
+        y = df[fluo2+'_r_50'].values
+        mask = [True if np.isfinite(this_x) and np.isfinite(this_y) else False for this_x, this_y in zip(x,y)]
+        x = x[mask]
+        y = y[mask]
+        plt.scatter(x, y, alpha=0.5)
+        aa2 = np.corrcoef(x, y)[0, 1]
+        plt.title(str(aa1/aa2))
+        plt.show()
 
 
 #%% 
