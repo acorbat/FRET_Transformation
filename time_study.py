@@ -5,7 +5,9 @@ Created on Wed Oct 11 12:32:47 2017
 @author: Agus
 """
 import itertools
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def add_differences(df, fluorophores=['YFP','mKate','TFP'], time_col='max_activity', Difference_tags=None):
     """
@@ -48,3 +50,38 @@ def add_differences(df, fluorophores=['YFP','mKate','TFP'], time_col='max_activi
         df[tag] = times2 - times1
     
     return df
+
+
+def plot_polarhist(x, y, plot_scatter=False):
+    """ Plots polar histogram of x vs y. If plot_scatter is True, Default is 
+    False, then it shows histogram and prepares polar scatter plot"""
+    p = x + 1j* y
+    p = p[np.isfinite(p)]
+    pn = p / np.abs(p)
+    for i, this_pn in enumerate(pn):
+        if np.isnan(this_pn):
+            pn[i] = 0
+    
+    frecs = np.histogram(np.angle(pn), bins = 20)
+    
+    N = len(frecs[0])
+    
+    theta = frecs[1][:-1] # np.linspace(0.0, 2 * np.pi, N, endpoint=False)
+    radii = frecs[0]
+    width = (2*np.pi) / N
+    
+    #matplotlib.rcParams.update({'font.size': 18})
+    
+    plt.figure(figsize=(10,10))
+    ax = plt.subplot(111, polar=True)
+    bars = ax.bar(theta, radii, width=width)
+    
+    # Use custom colors and opacity
+    for r, bar in zip(radii, bars):
+        bar.set_facecolor(plt.cm.jet(r / 10.))
+        bar.set_alpha(0.8)
+    
+    if plot_scatter:
+        plt.show()
+        
+        plt.polar(p, ls='', marker='o')
