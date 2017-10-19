@@ -16,33 +16,36 @@ os.chdir(this_dir)
 
 #%% load data
 
-working_path = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\old_data')
-#data_path = working_path.joinpath('2013-12-12.pandas')
+working_path = pathlib.Path(r'C:\Users\Agus\Documents\Laboratorio\Imaging three sensors\2017-09-04_Images')
+data_path = working_path.joinpath('noErode.pandas')
 
 df = pd.read_pickle(str(data_path))
+df = df.reset_index()
+df = fd.r_from_i_to_df(df)
 
 #%% Make window fit
 
-df = fd.general_fit(df, y_col='r')
+df = fd.general_fit(df)
 
 #%% Save window fit
-save_path = working_path.joinpath('2017-10-03_window_fit_2013-12-12.pandas')
+save_path = working_path.joinpath('2017-10-16_window_fit_noErode.pandas')
 df.to_pickle(str(save_path))
 
 #%% first filter for data
 
-df = fd.first_filter(df, col_to_filter='r')
+df = fd.first_filter(df)
 
 #%% save filtered data
 
-save_path = working_path.joinpath('2017-10-03_first_filter_2013-12-12.pandas')
+save_path = working_path.joinpath('2017-10-16_first_filter_noErode.pandas')
 df.to_pickle(str(save_path))
 
 #%% Choose best popts
 
-df = fd.second_filter(df, col_to_filter='r')
+df = fd.second_filter(df)
+df = fd.set_popts(df)
 
 #%% save best popts data
 
-save_path = working_path.joinpath('2017-10-03_best_popts_2013-12-12.pandas')
+save_path = working_path.joinpath('2017-10-16_best_popts_noErode.pandas')
 df.to_pickle(str(save_path))
