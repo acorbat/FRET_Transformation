@@ -6,6 +6,8 @@ Created on Tue Oct 24 12:01:38 2017
 """
 import numpy as np
 
+from scipy.integrate import ode
+
 # Define initial concentrations
 Lsat    = 6E4 # saturating level of ligand (corresponding to ~1000 ng/ml SuperKiller TRAIL)
 L50     = 3000 # baseline level of ligand for most experiments (corresponding to 50 ng/ml SuperKiller TRAIL)
@@ -40,7 +42,7 @@ transloc=.01# rate of translocation between the cytosolic and mitochondrial comp
 v=.07 # mitochondria compartment volume/cell volume
 
 # Initialize the full vector of initial conditions (IC) 
-IC = np.zeros([67,1])
+IC = np.zeros(68)
 IC[1] = L50
 IC[2] = RnosiRNA
 IC[5] = flip
@@ -103,7 +105,8 @@ k_[7]=1E-3
 kc[7]=1 
 
 # XIAP + C3 <--> XIAP:C3 --> XIAP + C3_U
-if C3_degrad == 1:
+#if C3_degrad == 1:
+if True:
     k[8]=2E-6
     k_[8]=1E-3
     kc[8]=.1
@@ -127,7 +130,8 @@ k[11]=1E-6
 k_[11]=1E-3 
 
 # Bax + tBid <--> Bax:tBid --> aBax + tBid 
-if Slower_Bax_Activation==0:
+#if Slower_Bax_Activation==0:
+if False:
     k[12]=1E-7
     k_[12]=1E-3
     kc[12]=1
@@ -313,7 +317,7 @@ def rhs(t, x, k, k_, kc, v):
     
     xp[32]=  k[13]*x[31] - k_[13]*x[32]
     -1/v*k[14]*x[32]*x[33] +k_[14]*x[34]
-    -1/v*2*k[15]*x[32]^2 +2*k_[15]*x[35]  # Baxm
+    -1/v*2*k[15]*x[32]**2 +2*k_[15]*x[35]  # Baxm
     
     xp[33]= -1/v*k[14]*x[32]*x[33] +k_[14]*x[34]
     -1/v*k[16]*x[33]*x[35] +k_[16]*x[36]
@@ -321,13 +325,13 @@ def rhs(t, x, k, k_, kc, v):
     
     xp[34]=  1/v*k[14]*x[32]*x[33] -k_[14]*x[34]  # Baxm:Bcl2
     
-    xp[35]=  1/v*k[15]*x[32]^2 -k_[15]*x[35]
+    xp[35]=  1/v*k[15]*x[32]**2 -k_[15]*x[35]
     -1/v*k[16]*x[33]*x[35] +k_[16]*x[36]
-    -2/v*k[17]*x[35]^2 +2*k_[17]*x[37]  # Bax2
+    -2/v*k[17]*x[35]**2 +2*k_[17]*x[37]  # Bax2
     
     xp[36]=  1/v*k[16]*x[33]*x[35] -k_[16]*x[36]  # Bax2:Bcl2
     
-    xp[37]= 1/v*k[17]*x[35]^2 -k_[17]*x[37]
+    xp[37]= 1/v*k[17]*x[35]**2 -k_[17]*x[37]
     -1/v*k[18]*x[33]*x[37] +k_[18]*x[38]
     -1/v*k[19]*x[39]*x[37] +k_[19]*x[40]  # Bax4 
     
@@ -356,7 +360,7 @@ def rhs(t, x, k, k_, kc, v):
     -k[26]*x[47] +k_[26]*x[55]  # Smacr
     
     xp[48]=  k[22]*x[44] -k_[22]*x[48]
-    -k[23]*x[48]*x(49] +k_[23]*x[50] +kc[23]*x[50]  # CytoC
+    -k[23]*x[48]*x[49] +k_[23]*x[50] +kc[23]*x[50]  # CytoC
     
     xp[49]= -k[23]*x[48]*x[49] +k_[23]*x[50]  # Apaf
     
@@ -400,3 +404,26 @@ def rhs(t, x, k, k_, kc, v):
     xp[66]=  k[31]*x[53]*x[65] -k_[31]*x[66] -kc[28]*x[66] # S9:C9
     
     xp[67]=  2*kc[28]*x[66] #SC9
+    
+    return xp
+
+
+# Define simulator function
+def simulate(t, IC):
+    simulation = ode(rhs).set_integrator('lsoda', nsteps=100000)
+    
+    x = np.zeros((len(IC), len(t)))
+    x[:, 0] = IC
+    
+    simulation.set_initial_value(x[:, 0], t[0]).set_f_params(k, k_, kc, v)
+    
+    for i, this_t in enumerate(t[1:]):
+        i +=1
+        if simulation.successful():
+            simulation.integrate(this_t)
+            x[:, i] = simulation.y
+        else:
+            print('simulation aborted')
+            break
+    
+    return x
