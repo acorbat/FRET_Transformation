@@ -5,11 +5,12 @@ Created on Tue Oct 24 12:01:38 2017
 @author: Agus
 """
 import numpy as np
+import pandas as pd
 import lmfit as lm
 
 from scipy.integrate import ode
 
-#%% Define initial concentrations Parameters
+#%% Define initial concentrations Parameters from Sorger
 
 params = lm.Parameters()
 # add with tuples: (NAME VALUE VARY MIN  MAX  EXPR  BRUTE_STEP)
@@ -73,6 +74,7 @@ params.add('Lfactor', value = params['L50']/50, vary=False)
 
 # Initialize the full vector of initial conditions (IC) 
 def _init_cc_from_params(params):
+    """Cast Parameters into the list of initial conditions"""
     IC = np.zeros(68)
     IC[1]  = params['L50']
     IC[2]  = params['RnosiRNA']
@@ -99,7 +101,7 @@ def _init_cc_from_params(params):
     return IC
 
 
-#%% Define rate reactions
+#%% Define rate reactions from Sorger
 
 params.add_many(
         ('L_ku', 4E-7, False, None, None, None, None), 
@@ -155,6 +157,7 @@ params.add_many(
         )
 
 def _k_from_params(params):
+    """Cast Parameters into the list of k, k_ and kc"""
     k = np.zeros(32)
     k_ = np.zeros(32)
     kc = np.zeros(29)
@@ -308,6 +311,7 @@ def _k_from_params(params):
 
 
 def rhs(t, x, k, k_, kc, v):
+    """Ordinary Differential Equations defined from the k, k_, kc and v"""
     # ODE with dimensions 
     xp = np.array(x)
     
@@ -489,6 +493,8 @@ def rhs(t, x, k, k_, kc, v):
 #%% Define simulator function
 
 def simulate(t, params):
+    """It simulates Sorger Model for the t times using the parameters in 
+    params."""
     simulation = ode(rhs).set_integrator('lsoda')
     
     x = np.zeros((68, len(t)))
@@ -507,4 +513,21 @@ def simulate(t, params):
             print('simulation aborted')
             break
     
-    return x
+    # List of variables used
+    variables = ['Ligand', 'R', 'L:R', 'R*', 'flip', 'flip:R*', 'pC8', 
+                 'R*:pC8', 'C8', 'Bar', 'Bar:C8', 'pC3', 'C8:pC3', 'C3', 'pC6',
+                 'C3:pC6', 'C6', 'C6:pC8', 'XIAP', 'XIAP:C3', 'PARP', 
+                 'C3:PARP', 'CPARP', 'Bid', 'C8:Bid', 'tBid', 'Bcl2c', 
+                 'Bcl2c:tBid', 'Bax', 'tBid:Bax', 'Bax*','Baxm', 'Bcl2', 
+                 'Baxm:Bcl2', 'Bax2', 'Bax2:Bcl2', 'Bax4', 'Bax4:Bcl2', 'M', 
+                 'Bax4:M', 'M*', 'CytoCm', 'M*:CytoCm', 'CytoCr', 'Smacm', 
+                 'M*:Smacm', 'Smacr', 'CytoC', 'Apaf', 'Apaf:CytoC', 'Apaf*',
+                 'pC9', 'Apop', 'Apop:pC3', 'Smac', 'Apop:XIAP', 'Smac:XIAP',
+                 'C3_Ub', 'S3', 'S3:C3', 'SC3', 'S8', 'S8:C8', 'SC8', 'S9', 
+                 'S9:C9', 'SC9']
+    
+    this_dict = {var: x[i+1, :] for i, var in enumerate(variables)}
+    res = pd.DataFrame.from_dict(this_dict)
+    res['t'] = t
+    
+    return res
