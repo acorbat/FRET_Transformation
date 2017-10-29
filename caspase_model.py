@@ -528,6 +528,6 @@ def simulate(t, params):
     
     this_dict = {var: x[i+1, :] for i, var in enumerate(variables)}
     res = pd.DataFrame.from_dict(this_dict)
-    res['t'] = t
+    res['t'] = t/60
     
     return res
