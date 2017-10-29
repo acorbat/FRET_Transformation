@@ -410,7 +410,7 @@ def rhs(t, x, k, k_, kc, v):
 
 # Define simulator function
 def simulate(t, IC):
-    simulation = ode(rhs).set_integrator('lsoda', nsteps=100000)
+    simulation = ode(rhs).set_integrator('lsoda')
     
     x = np.zeros((len(IC), len(t)))
     x[:, 0] = IC
