@@ -5,228 +5,306 @@ Created on Tue Oct 24 12:01:38 2017
 @author: Agus
 """
 import numpy as np
+import lmfit as lm
 
 from scipy.integrate import ode
 
-# Define initial concentrations
-Lsat    = 6E4 # saturating level of ligand (corresponding to ~1000 ng/ml SuperKiller TRAIL)
-L50     = 3000 # baseline level of ligand for most experiments (corresponding to 50 ng/ml SuperKiller TRAIL)
-RnosiRNA= 200 # TRAIL receptor (for experiments not involving siRNA)
-RsiRNA  = 100000 # TRAIL receptor for experiments involving siRNA; this is set higher than in non-siRNA experiments to reflect the experimentally observed sensitization caused by both targeting and non-targeting siRNA transfection, which is believed to occur at least partly through the upregulation of death receptors by an interferon pathway.
-flip  = 1E2  # Flip
-pC8   = 2E4  # procaspase-8 (pro-C8)
-Bar   = 1E3  # Bifunctional apoptosis regulator
-pC3   = 1E4  # procaspase-3 (pro-C3)
-pC6   = 1E4  # procaspase-6 (pro-C6)  
-XIAP  = 1E5  # X-linked inhibitor of apoptosis protein  
-PARP  = 1E6  # C3* substrate
-Bid   = 4E4  # Bid
-Bcl2c = 2E4  # cytosolic Bcl-2
-Bax   = 1E5  # Bax
-Bcl2  = 2E4  # mitochondrial Bcl-2  
-M     = 5E5  # mitochondrial binding sites for activated Bax
-CytoC = 5E5  # cytochrome c
-Smac  = 1E5  # Smac    
-pC9   = 1E5  # procaspase-9 (pro-C9) 1E4/2# 
-Apaf  = 1E5  # Apaf-1
+#%% Define initial concentrations Parameters
 
-#our Sensors
-S3 = 1E3     # Sensor for Caspase 3
-S8 = 1E3     # Sensor for Caspase 8
-S9 = 1E3     # Sensor for Caspase 9
+params = lm.Parameters()
+# add with tuples: (NAME VALUE VARY MIN  MAX  EXPR  BRUTE_STEP)
+params.add_many(
+        ('Lsat', 6E4, False, None, None, None, None), 
+        ('L50', 3000, False, None, None, None, None),
+        ('RnosiRNA', 200, False, None, None, None, None),
+        ('RsiRNA', 100000, False, None, None, None, None),
+        ('flip', 1E2, False, None, None, None, None),
+        ('pC8', 2E4, False, None, None, None, None),
+        ('Bar', 1E3, False, None, None, None, None),
+        ('pC3', 1E4, False, None, None, None, None),
+        ('pC6', 1E4, False, None, None, None, None),
+        ('XIAP', 1E5, False, None, None, None, None),
+        ('PARP', 1E6, False, None, None, None, None),
+        ('Bid', 4E4, False, None, None, None, None),
+        ('Bcl2c', 2E4, False, None, None, None, None),
+        ('Bax', 1E5, False, None, None, None, None),
+        ('Bcl2', 2E4, False, None, None, None, None),
+        ('M', 5E5, False, None, None, None, None),
+        ('CytoC', 5E5, False, None, None, None, None),
+        ('Smac', 1E5, False, None, None, None, None),
+        ('pC9', 1E5, False, None, None, None, None),
+        ('Apaf', 1E5, False, None, None, None, None),
+        ('S3', 1E3, False, None, None, None, None),
+        ('S8', 1E3, False, None, None, None, None),
+        ('S9', 1E3, False, None, None, None, None),
+        ('transloc', .01, False, None, None, None, None),
+        ('v', .07, False, None, None, None, None)
+        )
+params.add('Lfactor', value = params['L50']/50, vary=False)
+# Lsat: saturating level of ligand (corresponding to ~1000 ng/ml SuperKiller TRAIL)
+# L50: baseline level of ligand for most experiments (corresponding to 50 ng/ml SuperKiller TRAIL)
+# RnosiRNA: TRAIL receptor (for experiments not involving siRNA)
+# RsiRNA: TRAIL receptor for experiments involving siRNA; this is set higher than in non-siRNA experiments to reflect the experimentally observed sensitization caused by both targeting and non-targeting siRNA transfection, which is believed to occur at least partly through the upregulation of death receptors by an interferon pathway.
+# flip: Flip
+# pc8: procaspase-8 (pro-C8)
+# Bar: Bifunctional apoptosis regulator
+# pC3: procaspase-3 (pro-C3)
+# pC6: procaspase-6 (pro-C6)  
+# XIAP: X-linked inhibitor of apoptosis protein  
+# PARP: C3* substrate
+# Bid: Bid
+# Bcl2c: cytosolic Bcl-2
+# Bax: Bax
+# Bcl2: mitochondrial Bcl-2  
+# M: mitochondrial binding sites for activated Bax
+# CytoC: cytochrome c
+# Smac: Smac
+# pc9: procaspase-9 (pro-C9) 1E4/2# 
+# Apaf: Apaf-1
+## our Sensors
+# S3: Sensor for Caspase 3
+# S8: Sensor for Caspase 8
+# S9: Sensor for Caspase 9
 
-Lfactor=L50/50 #relationship of ligand concentration in the model (in # molecules/cell) to actual TRAIL concentration (in ng/ml)
+# Lfactor: relationship of ligand concentration in the model (in # molecules/cell) to actual TRAIL concentration (in ng/ml)
+# transloc: rate of translocation between the cytosolic and mitochondrial compartments
+# v: mitochondria compartment volume/cell volume
 
-transloc=.01# rate of translocation between the cytosolic and mitochondrial compartments
-
-v=.07 # mitochondria compartment volume/cell volume
 
 # Initialize the full vector of initial conditions (IC) 
-IC = np.zeros(68)
-IC[1] = L50
-IC[2] = RnosiRNA
-IC[5] = flip
-IC[7] = pC8
-IC[10] = Bar
-IC[12] = pC3
-IC[15] = pC6
-IC[19] = XIAP
-IC[21] = PARP
-IC[24] = Bid
-IC[27] = Bcl2c
-IC[29] = Bax
-IC[33] = Bcl2
-IC[39] = M
-IC[42] = CytoC
-IC[45] = Smac
-IC[49] = Apaf
-IC[52] = pC9
-IC[59] = S3
-IC[62] = S8
-IC[65] = S9 #our Sensors
+def _init_cc_from_params(params):
+    IC = np.zeros(68)
+    IC[1]  = params['L50']
+    IC[2]  = params['RnosiRNA']
+    IC[5]  = params['flip']
+    IC[7]  = params['pC8']
+    IC[10] = params['Bar']
+    IC[12] = params['pC3']
+    IC[15] = params['pC6']
+    IC[19] = params['XIAP']
+    IC[21] = params['PARP']
+    IC[24] = params['Bid']
+    IC[27] = params['Bcl2c']
+    IC[29] = params['Bax']
+    IC[33] = params['Bcl2']
+    IC[39] = params['M']
+    IC[42] = params['CytoC']
+    IC[45] = params['Smac']
+    IC[49] = params['Apaf']
+    IC[52] = params['pC9']
+    IC[59] = params['S3']
+    IC[62] = params['S8']
+    IC[65] = params['S9']
+    
+    return IC
 
 
-# Define rate reactions
-k = np.zeros(32)
-k_ = np.zeros(32)
-kc = np.zeros(29)
+#%% Define rate reactions
 
-# L + pR <--> L:pR --> R*
-k[1]=4E-7
-k_[1]=1E-3
-kc[1]=1E-5
+params.add_many(
+        ('L_ku', 4E-7, False, None, None, None, None), 
+        ('L_kd', 1E-3, False, None, None, None, None), 
+        ('L_kc', 1E-5, False, None, None, None, None), 
+        ('flip_ku', 1E-6, False, None, None, None, None),
+        ('flip_kd', 1E-3, False, None, None, None, None),
+        ('DISC_ku', 1E-6, False, None, None, None, None), 
+        ('DISC_kd', 1E-3, False, None, None, None, None), 
+        ('DISC_kc', 1, False, None, None, None, None), 
+        ('Bar_ku', 1E-6, False, None, None, None, None),
+        ('Bar_kd', 1E-3, False, None, None, None, None),
+        ('C8_ku', 1E-7, False, None, None, None, None), 
+        ('C8_kd', 1E-3, False, None, None, None, None), 
+        ('C8_kc', 1, False, None, None, None, None), 
+        ('C3_ku', 1E-6, False, None, None, None, None), 
+        ('C3_kd', 1E-3, False, None, None, None, None), 
+        ('C3_kc', 1, False, None, None, None, None), 
+        ('C6_ku', 3E-8, False, None, None, None, None), 
+        ('C6_kd', 1E-3, False, None, None, None, None), 
+        ('C6_kc', 1, False, None, None, None, None),
+        ('XIAP_ku', 2E-6, False, None, None, None, None), 
+        ('XIAP_kd', 1E-3, False, None, None, None, None), 
+        ('XIAP_kc', .1, False, None, None, None, None),
+        ('PARP_ku', 1E-6, False, None, None, None, None), 
+        ('PARP_kd', 1E-2, False, None, None, None, None), 
+        ('PARP_kc', 1, False, None, None, None, None),
+        ('Bcl2c_ku', 1E-6, False, None, None, None, None),
+        ('Bcl2c_kd', 1E-3, False, None, None, None, None),
+        ('tBid_ku', 1E-7, False, None, None, None, None), 
+        ('tBid_kd', 1E-3, False, None, None, None, None), 
+        ('tBid_kc', 1, False, None, None, None, None),
+        ('Bcl2_ku', 1E-6, False, None, None, None, None),
+        ('Bcl2_kd', 1E-3, False, None, None, None, None),
+        ('MBax_ku', 1E-6, False, None, None, None, None),
+        ('MBax_kd', 1E-3, False, None, None, None, None),
+        ('Bax4_ku', 1E-6, False, None, None, None, None), 
+        ('Bax4_kd', 1E-3, False, None, None, None, None), 
+        ('Bax4_kc', 1, False, None, None, None, None),
+        ('AMito_ku', 2E-6, False, None, None, None, None), 
+        ('AMito_kd', 1E-3, False, None, None, None, None), 
+        ('AMito_kc', 10, False, None, None, None, None),
+        ('CytoC_ku', 5E-7, False, None, None, None, None), 
+        ('CytoC_kd', 1E-3, False, None, None, None, None), 
+        ('CytoC_kc', 1, False, None, None, None, None),
+        ('Apaf_ku', 5E-8, False, None, None, None, None),
+        ('Apaf_kd', 1E-3, False, None, None, None, None),
+        ('C9_ku', 5E-9, False, None, None, None, None), 
+        ('C9_kd', 1E-3, False, None, None, None, None), 
+        ('C9_kc', 1, False, None, None, None, None), 
+        ('SMAC_ku', 7E-6, False, None, None, None, None), 
+        ('SMAC_kd', 1E-3, False, None, None, None, None), 
+        )
 
-# flip + DISC <-->  flip:DISC  
-k[2]=1E-6
-k_[2]=1E-3
+def _k_from_params(params):
+    k = np.zeros(32)
+    k_ = np.zeros(32)
+    kc = np.zeros(29)
+    
+    # L + pR <--> L:pR --> R*
+    k[1]  = params['L_ku']
+    k_[1] = params['L_kd']
+    kc[1] = params['L_kc']
+    
+    # flip + DISC <-->  flip:DISC  
+    k[2]  = params['flip_ku']
+    k_[2] = params['flip_kd']
+    
+    # pC8 + DISC <--> DISC:pC8 --> C8 + DISC
+    k[3]  = params['DISC_ku']
+    k_[3] = params['DISC_kd']
+    kc[3] = params['DISC_kc']
+    
+    # C8 + BAR <--> BAR:C8 
+    k[4]  = params['Bar_ku']
+    k_[4] = params['Bar_kd']
+    
+    # pC3 + C8 <--> pC3:C8 --> C3 + C8
+    k[5]  = params['C8_ku']
+    k_[5] = params['C8_kd']
+    kc[5] = params['C8_kc']
+    
+    # pC6 + C3 <--> pC6:C3 --> C6 + C3
+    k[6]  = params['C3_ku']
+    k_[6] = params['C3_kd']
+    kc[6] = params['C3_kc']
+    
+    # pC8 + C6 <--> pC8:C6 --> C8 + C6
+    k[7]  = params['C6_ku']
+    k_[7] = params['C6_kd']
+    kc[7] = params['C6_kc'] 
+    
+    # XIAP + C3 <--> XIAP:C3 --> XIAP + C3_U
+    k[8]  = params['XIAP_ku']
+    k_[8] = params['XIAP_kd']
+    kc[8] = params['XIAP_kc']
+    
+    # PARP + C3 <--> PARP:C3 --> CPARP + C3; NOT repetead with C3
+    k[9]  = params['PARP_ku']
+    k_[9] = params['PARP_kd']
+    kc[9] = params['PARP_kc']
+    
+    # Bid + C8 <--> Bid:C8 --> tBid + C8; Repeated with C8
+    k[10]  = params['C8_ku']
+    k_[10] = params['C8_kd']
+    kc[10] = params['C8_kc']
+    
+    # tBid + Bcl2c <-->  tBid:Bcl2c  
+    k[11]  = params['Bcl2c_ku']
+    k_[11] = params['Bcl2c_kd']
+    
+    # Bax + tBid <--> Bax:tBid --> aBax + tBid 
+    k[12]  = params['tBid_ku']
+    k_[12] = params['tBid_kd']
+    kc[12] = params['tBid_kc']
+    
+    # aBax <-->  MBax 
+    k[13]  = params['transloc']
+    k_[13] = params['transloc']
+    
+    # MBax + Bcl2 <-->  MBax:Bcl2  
+    k[14]  = params['Bcl2_ku']
+    k_[14] = params['Bcl2_kd']
+    
+    # MBax + MBax <-->  MBax:MBax == Bax2
+    k[15]  = params['MBax_ku']
+    k_[15] = params['MBax_kd']
+    
+    # Bax2 + Bcl2 <-->  MBax2:Bcl2; Repetaed with Bcl2  
+    k[16]  = params['Bcl2_ku']
+    k_[16] = params['Bcl2_kd']
+    
+    # Bax2 + Bax2 <-->  Bax2:Bax2 == Bax4; Repetead with MBax
+    k[17]  = params['MBax_ku']
+    k_[17] = params['MBax_kd']
+    
+    # Bax4 + Bcl2 <-->  MBax4:Bcl2; Repetaed with Bcl2  
+    k[18]  = params['Bcl2_ku']
+    k_[18] = params['Bcl2_kd']
+    
+    # Bax4 + Mit0 <-->  Bax4:Mito -->  AMito  
+    k[19]  = params['Bax4_ku']
+    k_[19] = params['Bax4_kd']
+    kc[19] = params['Bax4_kc']
+    
+    # AMit0 + mCtoC <-->  AMito:mCytoC --> AMito + ACytoC  
+    k[20]  = params['AMito_ku']
+    k_[20] = params['AMito_kd']
+    kc[20] = params['AMito_kc']
+    
+    # AMit0 + mSMac <-->  AMito:mSmac --> AMito + ASMAC; Repetead with AMito
+    k[21]  = params['AMito_ku']
+    k_[21] = params['AMito_kd']
+    kc[21] = params['AMito_kc']
+    
+    # ACytoC <-->  cCytoC
+    k[22]  = params['transloc']
+    k_[22] = params['transloc']
+    
+    # Apaf + cCytoC <-->  Apaf:cCytoC  
+    k[23]  = params['CytoC_ku']
+    k_[23] = params['CytoC_kd']
+    kc[23] = params['CytoC_kc']
+    
+    # Apaf:cCytoC + Procasp9 <-->  Apoptosome  
+    k[24]  = params['Apaf_ku']
+    k_[24] = params['Apaf_kd']
+    
+    # Apop + pCasp3 <-->  Apop:cCasp3 --> Apop + Casp3  
+    k[25]  = params['C9_ku']
+    k_[25] = params['C9_kd']
+    kc[25] = params['C9_kc']
+    
+    # ASmac <-->  cSmac
+    k[26]  = params['transloc']
+    k_[26] = params['transloc']
+    
+    # Apop + XIAP <-->  Apop:XIAP; Repeated XIAP  
+    k[27]  = params['XIAP_ku']
+    k_[27] = params['XIAP_kd']
+    
+    # cSmac + XIAP <-->  cSmac:XIAP  
+    k[28]  = params['SMAC_ku']
+    k_[28] = params['SMAC_kd']
+    
+    ### Our Sensor Reactions
+    # S3 + C3 <--> S3:C8 --> SC3 + C3; Repeated from PARP (should it be C3?)
+    k[29]  = params['PARP_ku']
+    k_[29] = params['PARP_kd']
+    kc[26] = params['PARP_kc']
+    
+    # S8 + C8 <--> S8:C8 --> SC8 + C8
+    k[30]  = params['C8_ku']
+    k_[30] = params['C8_kd']
+    kc[27] = params['C8_kc']
+    
+    # S9 + Apop <--> Apop:C9 --> SC9 + Apop
+    k[31]  = params['C9_ku']
+    k_[31] = params['C9_kd']
+    kc[28] = params['C9_kc']
+    
+    return k, k_, kc
 
-# pC8 + DISC <--> DISC:pC8 --> C8 + DISC
-k[3]=1E-6
-k_[3]=1E-3
-kc[3]=1
 
-# C8 + BAR <--> BAR:C8 
-k[4]=1E-6
-k_[4]=1E-3
-
-# pC3 + C8 <--> pC3:C8 --> C3 + C8
-k[5]=1E-7
-k_[5]=1E-3
-kc[5]=1
-
-# pC6 + C3 <--> pC6:C3 --> C6 + C3
-k[6]=1E-6
-k_[6]=1E-3
-kc[6]=1
-
-# pC8 + C6 <--> pC8:C6 --> C8 + C6
-k[7]=3E-8
-k_[7]=1E-3
-kc[7]=1 
-
-# XIAP + C3 <--> XIAP:C3 --> XIAP + C3_U
-#if C3_degrad == 1:
-if True:
-    k[8]=2E-6
-    k_[8]=1E-3
-    kc[8]=.1
-else:
-    k[8]=0
-    k_[8]=0
-    kc[8]=0
-
-# PARP + C3 <--> PARP:C3 --> CPARP + C3
-k[9]=1E-6
-k_[9]=1E-2
-kc[9]=1
-
-# Bid + C8 <--> Bid:C8 --> tBid + C8
-k[10]=1E-7
-k_[10]=1E-3
-kc[10]=1
-
-# tBid + Bcl2c <-->  tBid:Bcl2c  
-k[11]=1E-6
-k_[11]=1E-3 
-
-# Bax + tBid <--> Bax:tBid --> aBax + tBid 
-#if Slower_Bax_Activation==0:
-if True:
-    k[12]=1E-7
-    k_[12]=1E-3
-    kc[12]=1
-else:
-    k[12]= 7*1E-8
-    k_[12]=1E-3
-    kc[12]=1
-
-# aBax <-->  MBax 
-k[13]=transloc
-k_[13]=transloc
-
-# MBax + Bcl2 <-->  MBax:Bcl2  
-k[14]=1E-6
-k_[14]=1E-3 
-
-# MBax + MBax <-->  MBax:MBax == Bax2
-k[15]=1E-6
-k_[15]=1E-3
-
-# Bax2 + Bcl2 <-->  MBax2:Bcl2  
-k[16]=1E-6
-k_[16]=1E-3 
-
-# Bax2 + Bax2 <-->  Bax2:Bax2 == Bax4
-k[17]=1E-6
-k_[17]=1E-3
-
-# Bax4 + Bcl2 <-->  MBax4:Bcl2  
-k[18]=1E-6
-k_[18]=1E-3 
-
-# Bax4 + Mit0 <-->  Bax4:Mito -->  AMito  
-k[19]=1E-6
-k_[19]=1E-3
-kc[19]=1
-
-# AMit0 + mCtoC <-->  AMito:mCytoC --> AMito + ACytoC  
-k[20]=2E-6
-k_[20]=1E-3
-kc[20]=10 
-
-# AMit0 + mSMac <-->  AMito:mSmac --> AMito + ASMAC  
-k[21]=2E-6
-k_[21]=1E-3
-kc[21]=10 
-
-# ACytoC <-->  cCytoC
-k[22]=transloc
-k_[22]=transloc
-
-# Apaf + cCytoC <-->  Apaf:cCytoC  
-k[23]=5E-7
-k_[23]=1E-3
-kc[23]=1 
-
-# Apaf:cCytoC + Procasp9 <-->  Apoptosome  
-k[24]=5E-8
-k_[24]=1E-3
-
-# Apop + pCasp3 <-->  Apop:cCasp3 --> Apop + Casp3  
-k[25]=5E-9
-k_[25]=1E-3
-kc[25]=1
-
-# ASmac <-->  cSmac
-k[26]=transloc
-k_[26]=transloc
-
-# Apop + XIAP <-->  Apop:XIAP  
-k[27]=2E-6
-k_[27]=1E-3
-
-# cSmac + XIAP <-->  cSmac:XIAP  
-k[28]=7E-6
-k_[28]=1E-3
-
-### Our Sensor Reactions
-# S3 + C3 <--> S3:C8 --> SC3 + C3
-# k[29]=1E-7 k_[29]=1E-3 kc[26]=1 # This is seen for C8
-k[29]=1E-6
-k_[29]=1E-2
-kc[26]=1
-
-
-# S8 + C8 <--> S8:C8 --> SC8 + C8
-k[30]=1E-7
-k_[30]=1E-3
-kc[27]=1
-
-# S9 + Apop <--> Apop:C9 --> SC9 + Apop
-# k[31]=1E-7 k_[31]=1E-3 kc[28]=1 # This is seen for C8
-k[31]=5E-9
-k_[31]=1E-3
-kc[28]=1
+#%% Define ODE System
 
 
 def rhs(t, x, k, k_, kc, v):
@@ -408,12 +486,15 @@ def rhs(t, x, k, k_, kc, v):
     return xp
 
 
-# Define simulator function
-def simulate(t, IC):
+#%% Define simulator function
+
+def simulate(t, params):
     simulation = ode(rhs).set_integrator('lsoda')
     
-    x = np.zeros((len(IC), len(t)))
-    x[:, 0] = IC
+    x = np.zeros((68, len(t)))
+    x[:, 0] = _init_cc_from_params(params)
+    k, k_, kc = _k_from_params(params)
+    v = params['v']
     
     simulation.set_initial_value(x[:, 0], t[0]).set_f_params(k, k_, kc, v)
     
