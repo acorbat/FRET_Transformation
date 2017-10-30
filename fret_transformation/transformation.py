@@ -7,11 +7,14 @@ Created on Mon Aug 15 09:36:56 2016
 
 import operator
 import numpy as np
+import pandas as pd
 
 import matplotlib.pyplot as plt
 
-from scipy.optimize import minimize
-from scipy.optimize import curve_fit
+from scipy.optimize import minimize, curve_fit
+from scipy.signal import savgol_filter as savgol
+from scipy.interpolate import splrep, splev
+from scipy.misc import derivative
 
 from fret_transformation import anisotropy_functions as af
 from fret_transformation import caspase_fit as cf
@@ -671,7 +674,7 @@ def get_max_ind(compl):
     return ind_max + ini
 
 
-def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
+def find_complex(df, col_to_der='r_from_i', order=5, fluorophores=['YFP', 'mKate', 'TFP'], timepoints=10, Plot=False):
     """
     Takes the whole dataframe and applies finite differences to data in order
     to find the derivative of the sigmoid region anisotropy data of filtered
@@ -731,7 +734,7 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
 
                     x0 = df[fluo+'_x0'][i]
                     rate = df[fluo+'_rate'][i]
-                    r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
+                    r_reg, ind = sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
                     this_time = time[ind:ind+len(r_reg)]
 
                     max_act = get_max_ind(der_interp[ind*timepoints:(ind+len(r_reg))*timepoints]) + ind*timepoints
