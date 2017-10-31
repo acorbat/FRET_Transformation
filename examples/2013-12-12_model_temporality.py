@@ -7,6 +7,7 @@ import lmfit as lm
 import matplotlib.pyplot as plt
 
 from pyDOE import lhs
+from matplotlib.backends.backend_pdf import PdfPages
 
 from fret_transformation import caspase_model as cm
 from fret_transformation import transformation as tf
@@ -23,9 +24,9 @@ df = pd.read_pickle(str(data_dir))
 #%%
 
 fluorophores = ['YFP', 'mKate', 'TFP']
-Differences_tags = ['YFP_to_TFP', 'YFP_to_mKate', 'TFP_to_mKate']
+Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 
-def timedif_from_params(params, pp=None):
+def timedif_from_params(params, Differences_tags, pp=None):
     t = np.arange(0, 72000, 600)
     sim = cm.simulate(t, cm.params)
 
@@ -58,31 +59,31 @@ def timedif_from_params(params, pp=None):
             note = ''
             for fluo in fluorophores:
                 plt.plot(sim.t.values[0], sim[fluo+'_r_complex'].values[0], 'x')
-                note += str(sim[fluo+'_max_activity'][0]+'\n')
+                note = note + str(sim[fluo+'_max_activity'][0]) + '\n'
             pp.attach_note(note, positionRect=[100,100,100,100])
             pp.savefig()
             plt.close()
 
         sim = ts.add_differences(sim, Difference_tags=Differences_tags)
-        difs = [sim[tag].values for tag in Differences_tags]
+        difs = {tag: sim[tag].values for tag in Differences_tags}
     else:
-        difs = [np.nan] * 3
+        difs = {np.nan for tag in Differences_tags}
 
     return difs
 
 
 
 def sim_to_ani(df, col='r_from_i'):
-    fluo_to_cas = {'YFP': 'C9',
-                   'mKate': 'C8',
-                   'TFP': 'C3'}
+    fluo_to_cas = {'YFP': 'S9',
+                   'mKate': 'S8',
+                   'TFP': 'S3'}
     fluo_to_ani = {'YFP': (.22, .3),
                    'mKate': (.23, .28),
                    'TFP': (.28, .34)}
 
     for fluo in fluo_to_cas.keys():
         sens_norm = [sens/np.nanmax(sens)
-                     for sens in df['S'+fluo_to_cas[fluo]].values]
+                     for sens in df[fluo_to_cas[fluo]].values]
         anis = [af.Anisotropy_FromFit(m,
                                       fluo_to_ani[fluo][1],
                                       fluo_to_ani[fluo][0],
@@ -96,26 +97,47 @@ def sim_to_ani(df, col='r_from_i'):
 N = 10
 param_percents = lhs(6, samples=N)
 
-space_params = {'S3': (1E3, 1E6),
-                'S8': (1E3, 1E6),
-                'S9': (1E3, 1E6),
-                'C3_ku': (1e-7, 1e-5),
-                'C8_ku': (1e-8, 1e-6),
-                'C9_ku': (5e-10, 5e-8)}
+space_params = {'S3': (1E3, 1E5),
+                'S8': (1E3, 1E5),
+                'S9': (1E3, 1E5),
+                'C3_ku': (0.5e-6, 2e-6),
+                'C8_ku': (0.5e-7, 2e-7),
+                'C9_ku': (2.5e-9, 9e-9)}
 
-difs = np.zeros((3, N))
-for i, perc in enumerate(param_percents):
-    j=0
-    for param, (minval, maxval) in space_params.items():
-        val = minval + (maxval - minval) * perc[j]
+difs = {tag: [] for tag in Differences_tags}
 
-        j+=1
-        cm.params[param].set(value=val)
+pdf_dir = work_dir.joinpath('simfit.pdf')
+with PdfPages(str(pdf_dir)) as pp:
+    for i, perc in enumerate(param_percents):
+        j=0
+        for param, (minval, maxval) in space_params.items():
+            val = minval + (maxval - minval) * perc[j]
 
-    difs[:, i] = timedif_from_params(cm.params)
+            j+=1
+            cm.params[param].set(value=val)
+
+        this_dif = timedif_from_params(cm.params, Differences_tags, pp=pp)
+        for tag in Differences_tags:
+            difs[tag].append(this_dif[tag])
 
 df = ts.add_differences(df, Difference_tags=Differences_tags)
 
-plt.scatter(df.YFP_to_TFP.values, df.TFP_to_mKate.values)
-plt.scatter(difs[0], difs[1])
+def plot_scatter_times(x, y, marker='o', color=None):
+    if color is None:
+        color = ['r' if this_x>=0 and this_y>=0
+                else 'b' if this_x>=0 and this_y<0
+                else 'g' if this_x<0 and this_y>=0
+                else 'm'
+                for this_x, this_y in zip(x, y)]
+
+    plt.scatter(x, y, c=color, marker=marker, alpha=0.5)
+    plt.xlim((-35,35))
+    plt.ylim((-35,35))
+    plt.xlabel('TFP_to_YFP')
+    plt.ylabel('TFP_to_mKate')
+    ax = plt.gca()
+    ax.grid(True)
+
+plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
+plot_scatter_times(difs['TFP_to_YFP'], difs['TFP_to_mKate'], marker='x', color='k')
 plt.show()
