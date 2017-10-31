@@ -674,7 +674,7 @@ def get_max_ind(compl):
     return ind_max + ini
 
 
-def find_complex(df, col_to_der='r_from_i', order=5, fluorophores=['YFP', 'mKate', 'TFP'], timepoints=10, Plot=False):
+def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
     """
     Takes the whole dataframe and applies finite differences to data in order
     to find the derivative of the sigmoid region anisotropy data of filtered
@@ -693,9 +693,12 @@ def find_complex(df, col_to_der='r_from_i', order=5, fluorophores=['YFP', 'mKate
     df : Pandas DataFrame
         DataFrame containing the curves for each fluorophores, the best fit
         values, which are used to filter the curves as well.
+    col_to_der : string, optional
+        suffix of column to derive. Default is "r_from_i".
     order : optional, odd int
         Number of points to be used in the finite differences. Must be odd.
         Default is 5.
+    fluorophores : list of strings
     Plot : boolean, optional
         True if plots are to be showed. Default is False.
 
@@ -704,6 +707,9 @@ def find_complex(df, col_to_der='r_from_i', order=5, fluorophores=['YFP', 'mKate
     df : Pandas DataFrame
         Updated Pandas DataFrame
     """
+    fluorophores = [col for col in df.columns if col_to_der in col]
+    fluorophores = [col.split('_')[0] for col in fluorophores]
+    
     ders = {}
     maxs = {}
     for fluo in fluorophores:
