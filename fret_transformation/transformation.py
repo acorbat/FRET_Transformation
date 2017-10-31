@@ -698,7 +698,8 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
     order : optional, odd int
         Number of points to be used in the finite differences. Must be odd.
         Default is 5.
-    fluorophores : list of strings
+    timepoints : float or int
+        Spacing between timepoints. Default is 10.
     Plot : boolean, optional
         True if plots are to be showed. Default is False.
 
@@ -709,7 +710,7 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
     """
     fluorophores = [col for col in df.columns if col_to_der in col]
     fluorophores = [col.split('_')[0] for col in fluorophores]
-    
+
     ders = {}
     maxs = {}
     for fluo in fluorophores:
