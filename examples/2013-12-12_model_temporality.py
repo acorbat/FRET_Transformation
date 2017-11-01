@@ -103,15 +103,31 @@ def sim_to_ani(df, col='r_from_i'):
 cm.params['XIAP_kc'].set(value=0)
 cm.params['XIAP'].set(value=1E4)
 
-N = 10
-param_percents = lhs(6, samples=N)
+def generate_param_sweep(N, space_params = None):
+    if space_params is None:
+        space_params = {'S3': (1E4, 1E6),
+                        'S8': (1E4, 1E6),
+                        'S9': (1E4, 1E6)}#,
+                        #'C3_ku': (0.5e-6, 2e-6),
+                        #'C8_ku': (0.5e-7, 2e-7),
+                        #'C9_ku': (2.5e-9, 9e-9)}
 
-space_params = {'S3': (1E4, 1E6),
-                'S8': (1E4, 1E6),
-                'S9': (1E4, 1E6)}#,
-                #'C3_ku': (0.5e-6, 2e-6),
-                #'C8_ku': (0.5e-7, 2e-7),
-                #'C9_ku': (2.5e-9, 9e-9)}
+    dim = len(space_params)
+    param_percents = lhs(dim, samples=N)
+    param_df = pd.DataFrame(columns=list(space_params.keys()))
+
+    for percs in param_percents:
+        vals = {}
+        for perc, col in zip(percs, param_df.columns):
+            minval, maxval = space_params[col]
+            val = minval + (maxval - minval) * perc
+
+            vals[col] = val
+        vals = pd.DataFrame([vals])
+        param_df = param_df.append(vals, ignore_index=True)
+
+    return param_df
+
 
 difs = {tag: [] for tag in Differences_tags}
 
