@@ -165,6 +165,21 @@ def plot_scatter_times(x, y, marker='o', color=None):
     ax.grid(True)
 
 
+def count_neighbours(center, dist, df, cols_xy):
+    vects = []
+    for i, col in enumerate(cols_xy):
+        vect = [True if val > center[i] - dist[i] and \
+                val < center[i] + dist[i] \
+                else False \
+                for val in df[col].values]
+        vects.append(vect)
+
+    counts = np.asarray(vects)
+    counts = counts.all(axis=0)
+    print(counts)
+    return np.sum(counts)
+
+
 df = ts.add_differences(df, Difference_tags=Differences_tags)
 param_df = generate_param_sweep(2)
 
@@ -176,3 +191,10 @@ with PdfPages(str(pdf_dir)) as pp:
 plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
 plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
 plt.show()
+
+center = (param_df.TFP_to_YFP.values[0], param_df.TFP_to_mKate.values[0])
+dist = (5, 5)
+cols = ('TFP_to_YFP', 'TFP_to_mKate')
+count = count_neighbours(center, dist, df, cols)
+
+print(count)
