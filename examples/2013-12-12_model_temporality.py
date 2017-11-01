@@ -24,6 +24,7 @@ df = pd.read_pickle(str(data_dir))
 #%%
 
 fluorophores = ['YFP', 'mKate', 'TFP']
+Colors = {'YFP':'y', 'mKate':'r', 'TFP':'g'}
 Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 
 def timedif_from_params(params, Differences_tags, pp=None):
@@ -47,8 +48,8 @@ def timedif_from_params(params, Differences_tags, pp=None):
             sim[fluo+'_rate'] = np.nan
             sim[fluo+'_x0'] = np.nan
         if pp is not None:
-            plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x')
-            plt.plot(t, cf.sigmoid(t, *popt))
+            plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
+            plt.plot(t, cf.sigmoid(t, *popt), Colors[fluo])
 
     if not any(sim[fluo+'_base'].values == np.nan):
         sim = tf.find_complex(sim)
@@ -58,7 +59,9 @@ def timedif_from_params(params, Differences_tags, pp=None):
             plt.close()
             note = ''
             for fluo in fluorophores:
-                plt.plot(sim.t.values[0], sim[fluo+'_r_complex'].values[0], 'x')
+                if len(sim[fluo+'_r_complex'].values[0]) == len(sim.t.values[0]):
+                    plt.plot(sim.t.values[0], sim[fluo+'_r_complex'].values[0], 'x'+Colors[fluo])
+                plt.scatter(sim[fluo+'_max_activity'].values, [0]*len(sim[fluo+'_max_activity'].values), color=Colors[fluo])
                 note = note + str(sim[fluo+'_max_activity'][0]) + '\n'
             pp.attach_note(note, positionRect=[100,100,100,100])
             pp.savefig()
@@ -74,9 +77,9 @@ def timedif_from_params(params, Differences_tags, pp=None):
 
 
 def sim_to_ani(df, col='r_from_i'):
-    fluo_to_cas = {'YFP': 'S9',
-                   'mKate': 'S8',
-                   'TFP': 'S3'}
+    fluo_to_cas = {'YFP': 'SC9',
+                   'mKate': 'SC8',
+                   'TFP': 'SC3'}
     fluo_to_ani = {'YFP': (.22, .3),
                    'mKate': (.23, .28),
                    'TFP': (.28, .34)}
@@ -94,15 +97,21 @@ def sim_to_ani(df, col='r_from_i'):
 
     return df
 
+# C3 not inhibited by XIAP
+#cm.params['XIAP_ku'].set(value=0.9E-4)
+#cm.params['XIAP_kd'].set(value=1E-3)
+cm.params['XIAP_kc'].set(value=0)
+cm.params['XIAP'].set(value=1E4)
+
 N = 10
 param_percents = lhs(6, samples=N)
 
-space_params = {'S3': (1E3, 1E5),
-                'S8': (1E3, 1E5),
-                'S9': (1E3, 1E5),
-                'C3_ku': (0.5e-6, 2e-6),
-                'C8_ku': (0.5e-7, 2e-7),
-                'C9_ku': (2.5e-9, 9e-9)}
+space_params = {'S3': (1E4, 1E6),
+                'S8': (1E4, 1E6),
+                'S9': (1E4, 1E6)}#,
+                #'C3_ku': (0.5e-6, 2e-6),
+                #'C8_ku': (0.5e-7, 2e-7),
+                #'C9_ku': (2.5e-9, 9e-9)}
 
 difs = {tag: [] for tag in Differences_tags}
 
@@ -131,8 +140,8 @@ def plot_scatter_times(x, y, marker='o', color=None):
                 for this_x, this_y in zip(x, y)]
 
     plt.scatter(x, y, c=color, marker=marker, alpha=0.5)
-    plt.xlim((-35,35))
-    plt.ylim((-35,35))
+    #plt.xlim((-35,35))
+    #plt.ylim((-35,35))
     plt.xlabel('TFP_to_YFP')
     plt.ylabel('TFP_to_mKate')
     ax = plt.gca()
