@@ -29,7 +29,7 @@ Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 
 def timedif_from_params(params, Differences_tags, pp=None):
     t = np.arange(0, 72000, 600)
-    sim = cm.simulate(t, cm.params)
+    sim = cm.simulate(t, params)
 
     sim = sim_to_ani(sim)
 
@@ -129,31 +129,32 @@ def generate_param_sweep(N, space_params = None):
     return param_df
 
 
-difs = {tag: [] for tag in Differences_tags}
+def add_times_from_sim(param_df, Differences_tags, pp=None):
+    new_param_df = param_df.copy()
 
-pdf_dir = work_dir.joinpath('simfit.pdf')
-with PdfPages(str(pdf_dir)) as pp:
-    for i, perc in enumerate(param_percents):
-        j=0
-        for param, (minval, maxval) in space_params.items():
-            val = minval + (maxval - minval) * perc[j]
+    for tag in Differences_tags:
+        new_param_df[tag] = np.nan
 
-            j+=1
-            cm.params[param].set(value=val)
 
-        this_dif = timedif_from_params(cm.params, Differences_tags, pp=pp)
+    for i in param_df.index:
+
+        for col in param_df.columns:
+            cm.params[col].set(value=param_df[col][i])
+        difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
+
         for tag in Differences_tags:
-            difs[tag].append(this_dif[tag])
+            new_param_df = new_param_df.set_value(i, tag, difs[tag])
 
-df = ts.add_differences(df, Difference_tags=Differences_tags)
+    return new_param_df
+
 
 def plot_scatter_times(x, y, marker='o', color=None):
     if color is None:
         color = ['r' if this_x>=0 and this_y>=0
-                else 'b' if this_x>=0 and this_y<0
-                else 'g' if this_x<0 and this_y>=0
-                else 'm'
-                for this_x, this_y in zip(x, y)]
+        else 'b' if this_x>=0 and this_y<0
+        else 'g' if this_x<0 and this_y>=0
+        else 'm'
+        for this_x, this_y in zip(x, y)]
 
     plt.scatter(x, y, c=color, marker=marker, alpha=0.5)
     #plt.xlim((-35,35))
@@ -163,6 +164,15 @@ def plot_scatter_times(x, y, marker='o', color=None):
     ax = plt.gca()
     ax.grid(True)
 
+
+df = ts.add_differences(df, Difference_tags=Differences_tags)
+param_df = generate_param_sweep(2)
+
+
+pdf_dir = work_dir.joinpath('simfit.pdf')
+with PdfPages(str(pdf_dir)) as pp:
+    param_df = add_times_from_sim(param_df, Differences_tags, pp=pp)
+
 plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
-plot_scatter_times(difs['TFP_to_YFP'], difs['TFP_to_mKate'], marker='x', color='k')
+plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
 plt.show()
