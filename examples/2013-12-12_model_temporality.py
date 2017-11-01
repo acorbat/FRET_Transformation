@@ -176,8 +176,20 @@ def count_neighbours(center, dist, df, cols_xy):
 
     counts = np.asarray(vects)
     counts = counts.all(axis=0)
-    print(counts)
     return np.sum(counts)
+
+def add_counts(param_df):
+    centers = [param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values]
+    centers = np.asarray(centers)
+
+    counts = []
+    for center in centers:
+        count = count_neighbours(center, (5,5), df, ('TFP_to_YFP', 'TFP_to_mKate'))
+        counts.append(count)
+
+    param_df['counts'] = counts
+
+    return param_df
 
 
 df = ts.add_differences(df, Difference_tags=Differences_tags)
@@ -188,13 +200,10 @@ pdf_dir = work_dir.joinpath('simfit.pdf')
 with PdfPages(str(pdf_dir)) as pp:
     param_df = add_times_from_sim(param_df, Differences_tags, pp=pp)
 
+param_df = add_counts(param_df)
+
+print(param_df)
+
 plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
 plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
 plt.show()
-
-center = (param_df.TFP_to_YFP.values[0], param_df.TFP_to_mKate.values[0])
-dist = (5, 5)
-cols = ('TFP_to_YFP', 'TFP_to_mKate')
-count = count_neighbours(center, dist, df, cols)
-
-print(count)
