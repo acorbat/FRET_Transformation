@@ -1,5 +1,6 @@
 # import packages to be used
 import sys
+import os
 import pathlib
 import numpy as np
 import pandas as pd
@@ -9,17 +10,19 @@ import matplotlib.pyplot as plt
 from pyDOE import lhs
 from matplotlib.backends.backend_pdf import PdfPages
 
+sys.path.append(os.path.abspath('/mnt/data/Laboratorio/Imaging three sensors/FRET_Transformation'))
 from fret_transformation import caspase_model as cm
 from fret_transformation import transformation as tf
 from fret_transformation import anisotropy_functions as af
 from fret_transformation import caspase_fit as cf
 from fret_transformation import time_study as ts
+from multiprocessing import Pool
 
+#os.system("taskset -p 0xff %d" % os.getpid())
 #%% Load data
-work_dir = pathlib.Path(
-            '/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images')
-data_dir = work_dir.joinpath('2017-10-16_complex_noErode_order05.pandas')
-df = pd.read_pickle(str(data_dir))
+work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
+# data_dir = work_dir.joinpath('2017-10-16_complex_noErode_order05.pandas')
+# df = pd.read_pickle(str(data_dir))
 
 #%%
 
@@ -100,17 +103,17 @@ def sim_to_ani(df, col='r_from_i'):
 # C3 not inhibited by XIAP
 #cm.params['XIAP_ku'].set(value=0.9E-4)
 #cm.params['XIAP_kd'].set(value=1E-3)
-cm.params['XIAP_kc'].set(value=0)
-cm.params['XIAP'].set(value=1E4)
+#cm.params['XIAP_kc'].set(value=0)
+#cm.params['XIAP'].set(value=1E4)
 
 def generate_param_sweep(N, space_params = None):
     if space_params is None:
         space_params = {'S3': (1E4, 1E6),
                         'S8': (1E4, 1E6),
-                        'S9': (1E4, 1E6)}#,
-                        #'C3_ku': (0.5e-6, 2e-6),
-                        #'C8_ku': (0.5e-7, 2e-7),
-                        #'C9_ku': (2.5e-9, 9e-9)}
+                        'S9': (1E4, 1E6),
+                        'C3_ku': (0.5e-6, 2e-6),
+                        'C8_ku': (0.5e-7, 2e-7),
+                        'C9_ku': (2.5e-9, 9e-9)}
 
     dim = len(space_params)
     param_percents = lhs(dim, samples=N)
@@ -137,7 +140,7 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
 
 
     for i in param_df.index:
-
+        print(i)
         for col in param_df.columns:
             cm.params[col].set(value=param_df[col][i])
         difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
@@ -192,18 +195,37 @@ def add_counts(param_df):
     return param_df
 
 
-df = ts.add_differences(df, Difference_tags=Differences_tags)
-param_df = generate_param_sweep(2)
+# df = ts.add_differences(df, Difference_tags=Differences_tags)
 
 
-pdf_dir = work_dir.joinpath('simfit.pdf')
-with PdfPages(str(pdf_dir)) as pp:
-    param_df = add_times_from_sim(param_df, Differences_tags, pp=pp)
+# pdf_dir = work_dir.joinpath('simfit.pdf')
+# with PdfPages(str(pdf_dir)) as pp:
 
-param_df = add_counts(param_df)
 
-print(param_df)
+# param_df = add_counts(param_df)
 
-plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
-plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
-plt.show()
+# print(param_df)
+
+# plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
+# plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
+# plt.show()
+
+save_dir = work_dir.joinpath('sim_params')
+
+def sim_and_save(i):
+    param_df = generate_param_sweep(1000)
+    param_df = add_times_from_sim(param_df, Differences_tags)
+    savename = save_dir.joinpath('sorger_nomodif_%02d.pandas' % i)
+    param_df.to_pickle(str(savename))
+    return i
+
+sim_and_save(0)
+
+# cors = 1
+# if __name__ == '__main__':
+#     with Pool(cors) as p:
+#         import time
+#         t = time.clock()
+#         for a in p.imap_unordered(sim_and_save, range(cors)):
+#             print(a)
+#         print(time.clock() - t)
