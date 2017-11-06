@@ -206,7 +206,7 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
     var_cols = param_df.columns
 
     for tag in Differences_tags:
-        new_param_df[tag] = np.nan
+        param_df[tag] = np.nan
 
 
     for i in param_df.index:
@@ -216,9 +216,9 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
         difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
 
         for tag in Differences_tags:
-            new_param_df = new_param_df.set_value(i, tag, difs[tag])
+            param_df = param_df.set_value(i, tag, difs[tag])
 
-    return new_param_df
+    return param_df
 
 
 def plot_polarhist(x, y, plot_scatter=False):
