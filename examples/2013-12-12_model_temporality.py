@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from pyDOE import lhs
 from matplotlib.backends.backend_pdf import PdfPages
 
-sys.path.append(os.path.abspath('/mnt/data/Laboratorio/Imaging three sensors/FRET_Transformation'))
+#sys.path.append(os.path.abspath('/mnt/data/Laboratorio/Imaging three sensors/FRET_Transformation'))
 from fret_transformation import caspase_model as cm
 from fret_transformation import transformation as tf
 from fret_transformation import anisotropy_functions as af
@@ -103,17 +103,17 @@ def sim_to_ani(df, col='r_from_i'):
 # C3 not inhibited by XIAP
 #cm.params['XIAP_ku'].set(value=0.9E-4)
 #cm.params['XIAP_kd'].set(value=1E-3)
-#cm.params['XIAP_kc'].set(value=0)
-#cm.params['XIAP'].set(value=1E4)
+# cm.params['XIAP_kc'].set(value=0)
+# cm.params['XIAP'].set(value=1E4)
 
 def generate_param_sweep(N, space_params = None):
     if space_params is None:
-        space_params = {'S3': (1E4, 1E6),
-                        'S8': (1E4, 1E6),
-                        'S9': (1E4, 1E6),
-                        'C3_ku': (0.5e-6, 2e-6),
-                        'C8_ku': (0.5e-7, 2e-7),
-                        'C9_ku': (2.5e-9, 9e-9)}
+        space_params = {'S3': (1E2, 1E7),
+                        'S8': (1E2, 1E7),
+                        'S9': (1E2, 1E7),
+                        'C3S_ku': (0.5e-6, 2e-6),
+                        'C8S_ku': (0.5e-7, 2e-7),
+                        'C9S_ku': (2.5e-9, 9e-9)}
 
     dim = len(space_params)
     param_percents = lhs(dim, samples=N)
@@ -133,22 +133,22 @@ def generate_param_sweep(N, space_params = None):
 
 
 def add_times_from_sim(param_df, Differences_tags, pp=None):
-    new_param_df = param_df.copy()
+    var_cols = param_df.columns
 
     for tag in Differences_tags:
-        new_param_df[tag] = np.nan
+        param_df[tag] = np.nan
 
 
     for i in param_df.index:
         print(i)
-        for col in param_df.columns:
+        for col in var_cols:
             cm.params[col].set(value=param_df[col][i])
         difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
 
         for tag in Differences_tags:
-            new_param_df = new_param_df.set_value(i, tag, difs[tag])
+            param_df = param_df.set_value(i, tag, difs[tag])
 
-    return new_param_df
+    return param_df
 
 
 def plot_scatter_times(x, y, marker='o', color=None):
@@ -215,7 +215,7 @@ save_dir = work_dir.joinpath('sim_params')
 def sim_and_save(i):
     param_df = generate_param_sweep(1000)
     param_df = add_times_from_sim(param_df, Differences_tags)
-    savename = save_dir.joinpath('sorger_nomodif_%02d.pandas' % i)
+    savename = save_dir.joinpath('uncoupled_nomodif_six_%02d.pandas' % i)
     param_df.to_pickle(str(savename))
     return i
 
