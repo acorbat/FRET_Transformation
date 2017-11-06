@@ -154,6 +154,15 @@ params.add_many(
         ('C9_kc', 1, False, 0, None, None, None),
         ('SMAC_ku', 7E-6, False, 0, None, None, None),
         ('SMAC_kd', 1E-3, False, 0, None, None, None),
+        ('C3S_ku', 1E-6, False, 0, None, None, None),
+        ('C3S_kd', 1E-2, False, 0, None, None, None),
+        ('C3S_kc', 1, False, 0, None, None, None),
+        ('C8S_ku', 1E-7, False, 0, None, None, None),
+        ('C8S_kd', 1E-3, False, 0, None, None, None),
+        ('C8S_kc', 1, False, 0, None, None, None),
+        ('C9S_ku', 5E-9, False, 0, None, None, None),
+        ('C9S_kd', 1E-3, False, 0, None, None, None),
+        ('C9S_kc', 1, False, 0, None, None, None)
         )
 
 def _k_from_params(params):
@@ -290,19 +299,19 @@ def _k_from_params(params):
 
     ### Our Sensor Reactions
     # S3 + C3 <--> S3:C8 --> SC3 + C3; Repeated from PARP (should it be C3?)
-    k[29]  = params['PARP_ku']
-    k_[29] = params['PARP_kd']
-    kc[26] = params['PARP_kc']
+    k[29]  = params['C3S_ku']
+    k_[29] = params['C3S_kd']
+    kc[26] = params['C3S_kc']
 
     # S8 + C8 <--> S8:C8 --> SC8 + C8
-    k[30]  = params['C8_ku']
-    k_[30] = params['C8_kd']
-    kc[27] = params['C8_kc']
+    k[30]  = params['C8S_ku']
+    k_[30] = params['C8S_kd']
+    kc[27] = params['C8S_kc']
 
     # S9 + Apop <--> Apop:C9 --> SC9 + Apop
-    k[31]  = params['C9_ku']
-    k_[31] = params['C9_kd']
-    kc[28] = params['C9_kc']
+    k[31]  = params['C9S_ku']
+    k_[31] = params['C9S_kd']
+    kc[28] = params['C9S_kc']
 
     return k, k_, kc
 
