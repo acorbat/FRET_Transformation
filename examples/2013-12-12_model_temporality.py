@@ -103,17 +103,17 @@ def sim_to_ani(df, col='r_from_i'):
 # C3 not inhibited by XIAP
 #cm.params['XIAP_ku'].set(value=0.9E-4)
 #cm.params['XIAP_kd'].set(value=1E-3)
-# cm.params['XIAP_kc'].set(value=0)
-# cm.params['XIAP'].set(value=1E4)
+cm.params['XIAP_kc'].set(value=0)
+cm.params['XIAP'].set(value=1E3)
 
 def generate_param_sweep(N, space_params = None):
     if space_params is None:
         space_params = {'S3': (1E2, 1E7),
                         'S8': (1E2, 1E7),
-                        'S9': (1E2, 1E7),
-                        'C3S_ku': (0.5e-6, 2e-6),
-                        'C8S_ku': (0.5e-7, 2e-7),
-                        'C9S_ku': (2.5e-9, 9e-9)}
+                        'S9': (1E2, 1E7)}#,
+                        # 'C3S_ku': (0.5e-6, 2e-6),
+                        # 'C8S_ku': (0.5e-7, 2e-7),
+                        # 'C9S_ku': (2.5e-9, 9e-9)}
 
     dim = len(space_params)
     param_percents = lhs(dim, samples=N)
@@ -215,11 +215,11 @@ save_dir = work_dir.joinpath('sim_params')
 def sim_and_save(i):
     param_df = generate_param_sweep(1000)
     param_df = add_times_from_sim(param_df, Differences_tags)
-    savename = save_dir.joinpath('uncoupled_nomodif_six_%02d.pandas' % i)
+    savename = save_dir.joinpath('xiapkc_off_xiap_1e3_thr_%02d.pandas' % i)
     param_df.to_pickle(str(savename))
     return i
 
-sim_and_save(0)
+sim_and_save(1)
 
 # cors = 1
 # if __name__ == '__main__':
