@@ -9,6 +9,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from scipy.interpolate import splrep, splev
+from scipy.misc import derivative
+
+from fret_transformation.transformation import get_max_ind
 from fret_transformation import caspase_model as cm
 
 def add_differences(df, fluorophores=['YFP','mKate','TFP'], time_col='max_activity', Difference_tags=None):
@@ -132,28 +136,17 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
 
     sim = sim_to_ani(sim)
 
+    sim_aborted = {}
     for fluo in fluorophores:
         r = sim[fluo+'_r_from_i'].values[0]
         t = np.arange(0, len(r)*10, 10)
-        try:
-            popt, _, _, _ = tf.nanfit(cf.sigmoid, r, xdata=t, p0=[0.2, 0.3, 0.2, 210])
-            sim[fluo+'_base'] = popt[0]
-            sim[fluo+'_amplitude'] = popt[1]
-            sim[fluo+'_rate'] = popt[2]
-            sim[fluo+'_x0'] = popt[3]
-        except RuntimeError:
-            sim[fluo+'_base'] = np.nan
-            sim[fluo+'_amplitude'] = np.nan
-            sim[fluo+'_rate'] = np.nan
-            sim[fluo+'_x0'] = np.nan
-        if pp is not None:
-            plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
-            plt.plot(t, cf.sigmoid(t, *popt), Colors[fluo])
+        sim_aborted[fluo] = r[0]==r[-1]
 
     if not any(sim[fluo+'_base'].values == np.nan):
-        sim = tf.find_complex(sim)
+        sim = find_complex_in_sim(sim)
 
         if pp is not None:
+            plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
             pp.savefig()
             plt.close()
             note = ''
@@ -169,7 +162,7 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         sim = ts.add_differences(sim, Difference_tags=Differences_tags)
         difs = {tag: sim[tag].values for tag in Differences_tags}
     else:
-        difs = {np.nan for tag in Differences_tags}
+        difs = {tag: np.nan for tag in Differences_tags}
 
     return difs
 
@@ -219,6 +212,97 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
             param_df = param_df.set_value(i, tag, difs[tag])
 
     return param_df
+
+
+def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
+    """
+    Takes the whole dataframe and applies finite differences to data in order
+    to find the derivative of the sigmoid region anisotropy data of filtered
+    curves.
+
+    This function doesn't select the sigmoid region of the data. Finite
+    differences is used to find the first derivative, and filter noise. Spline
+    interpolation is used to find maximum at the derived curve. Maximum cannot
+    be found at the beginning and ending of curves (this is usually caused by
+    interpolation) so these values are discarded.
+
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        DataFrame containing the curves for each fluorophores, the best fit
+        values, which are used to filter the curves as well.
+    col_to_der : string, optional
+        suffix of column to derive. Default is "r_from_i".
+    order : optional, odd int
+        Number of points to be used in the finite differences. Must be odd.
+        Default is 5.
+    timepoints : float or int
+        Spacing between timepoints. Default is 10.
+    Plot : boolean, optional
+        True if plots are to be showed. Default is False.
+
+    Returns
+    -------
+    df : Pandas DataFrame
+        Updated Pandas DataFrame
+    """
+    fluorophores = [col for col in df.columns if col_to_der in col]
+    fluorophores = [col.split('_')[0] for col in fluorophores]
+
+    ders = {}
+    maxs = {}
+    for fluo in fluorophores:
+        ders[fluo] = []
+        maxs[fluo] = []
+
+    for i in df.index:
+        for fluo in fluorophores:
+            r = df['_'.join([fluo, col_to_der])][i]
+            if r[0]!=r[-1]:
+                time = np.arange(0, len(r)*timepoints, timepoints)
+
+                def this_vect(t):
+                    ind = t//timepoints
+                    ind = np.clip(ind, 0, len(r)-1)
+                    return r[ind]
+
+                r_der = derivative(this_vect, time, dx=timepoints, order=order)
+
+                t = np.arange(0, len(r)*timepoints)
+                f = splrep(time, r_der, k=3, s=0)
+                der_interp = splev(t, f, der=0)
+
+                max_act = get_max_ind(der_interp)
+
+                if Plot:
+                    fig, axs = plt.subplots(2,1, sharex=True, figsize=(10,12))
+                    axs[0].plot(time, r, Colors[fluo]+'--', alpha=0.5)
+                    axs[0].set_ylabel('fraction')
+
+                    axs[1].plot(time, r_der)
+                    axs[1].plot(t, der_interp, Colors[fluo])
+                    axs[1].set_ylabel('complex')
+                    axs[1].set_xlabel('time (min.)')
+
+                    plt.suptitle('obj:'+str(i)+' exp:'+df.Content_YFP[i]+' max:'+str(max_act))
+                    last_maxs = [fluo+' '+str(maxs[fluo][-1]) for fluo in fluorophores]
+                    note = '\n'.join(last_maxs)
+                    plt.show()
+                    print(note)
+
+                ders[fluo].append(r_der)
+                maxs[fluo].append(max_act)
+
+
+            else:
+                ders[fluo].append([np.nan])
+                maxs[fluo].append(np.nan)
+
+    for fluo in fluorophores:
+        df[fluo+'_r_complex'] = ders[fluo]
+        df[fluo+'_max_activity'] = maxs[fluo]
+
+    return df
 
 
 def plot_polarhist(x, y, plot_scatter=False):
