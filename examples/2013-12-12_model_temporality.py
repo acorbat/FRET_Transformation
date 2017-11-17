@@ -36,26 +36,17 @@ def timedif_from_params(params, Differences_tags, pp=None):
 
     sim = sim_to_ani(sim)
 
+    sim_aborted = {}
     for fluo in fluorophores:
         r = sim[fluo+'_r_from_i'].values[0]
         t = np.arange(0, len(r)*10, 10)
-        try:
-            popt, _, _, _ = tf.nanfit(cf.sigmoid, r, xdata=t, p0=[0.2, 0.3, 0.2, 210])
-            sim[fluo+'_base'] = popt[0]
-            sim[fluo+'_amplitude'] = popt[1]
-            sim[fluo+'_rate'] = popt[2]
-            sim[fluo+'_x0'] = popt[3]
-        except RuntimeError:
-            sim[fluo+'_base'] = np.nan
-            sim[fluo+'_amplitude'] = np.nan
-            sim[fluo+'_rate'] = np.nan
-            sim[fluo+'_x0'] = np.nan
+        sim_aborted[fluo] = r[0]==r[-1]
+
         if pp is not None:
             plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
-            plt.plot(t, cf.sigmoid(t, *popt), Colors[fluo])
 
-    if not any(sim[fluo+'_base'].values == np.nan):
-        sim = tf.find_complex(sim)
+    if not any(sim_aborted.values()):
+        sim = ts.find_complex_in_sim(sim)
 
         if pp is not None:
             pp.savefig()
@@ -73,7 +64,7 @@ def timedif_from_params(params, Differences_tags, pp=None):
         sim = ts.add_differences(sim, Difference_tags=Differences_tags)
         difs = {tag: sim[tag].values for tag in Differences_tags}
     else:
-        difs = {np.nan for tag in Differences_tags}
+        difs = {tag: np.nan for tag in Differences_tags}
 
     return difs
 
@@ -101,19 +92,47 @@ def sim_to_ani(df, col='r_from_i'):
     return df
 
 # C3 not inhibited by XIAP
-#cm.params['XIAP_ku'].set(value=0.9E-4)
-#cm.params['XIAP_kd'].set(value=1E-3)
-cm.params['XIAP_kc'].set(value=0)
-cm.params['XIAP'].set(value=1E3)
+# cm.params['XIAP_ku'].set(value=0.9E-4)
+# cm.params['XIAP_kd'].set(value=1E-3)
+# cm.params['XIAP_kc'].set(value=0)
+# cm.params['XIAP'].set(value=1E2)
+# cm.params['pC9'].set(value=1E3)
 
 def generate_param_sweep(N, space_params = None):
     if space_params is None:
-        space_params = {'S3': (1E2, 1E7),
-                        'S8': (1E2, 1E7),
-                        'S9': (1E2, 1E7)}#,
+        min_f = 2
+        max_f = 3
+        space_params = {#'S3': (1E2, 1E7),
+                        # 'S8': (1E2, 1E7),
+                        # 'S9': (1E2, 1E7),
+                        'XIAP_kc': (0, 0.05),
+                        # 'CytoC' : (1E6, 5E6),
+                        # 'Apaf': (14E5, 18E5),
+                        'XIAP': (1E2, 1E3)}
                         # 'C3S_ku': (0.5e-6, 2e-6),
                         # 'C8S_ku': (0.5e-7, 2e-7),
-                        # 'C9S_ku': (2.5e-9, 9e-9)}
+                        # 'C9S_ku': (2.5e-9, 9e-9)}#,
+                        # 'L50' : (1E2, 1E5),
+                        # 'Bcl2c' : (2E4 * 0.1, 2E4 * 2),
+                        # 'Apaf': (1E3 * min_f * 372, 1E3 * max_f * 372),
+                        # 'pC9' : (1E3 * min_f * 30, 1E3 * max_f * 30),
+                        # 'pC3' : (1E3 * min_f * 120, 1E3 * max_f * 120),
+                        # 'XIAP' : (1E3 * min_f * 63, 1E3 * max_f * 63),
+                        # 'Smac' : (1E3 * min_f * 126, 1E3 * max_f * 126)}#,
+                        # 'CytoC' : (1E3 * min_f * 1E4, 1E3 * max_f * 1E4)}
+        # space_params = {'S3': (1E6, 1E7),
+        #                 'S8': (1E6, 1E7),
+        #                 'S9': (1E6, 1E7),
+        #                 # 'C3S_ku': (0.5e-6, 2e-6),
+        #                 # 'C8S_ku': (0.5e-7, 2e-7),
+        #                 # 'C9S_ku': (2.5e-9, 9e-9)}#,
+        #                 'Bcl2c' : (3.6E4, 4E4),
+        #                 'Apaf': (1E6, 1E7),
+        #                 'pC9' : (1.9E6, 3E6),
+        #                 'pC3' : (2E6, 5E6),
+        #                 'XIAP' : (1.5E6, 5E6),
+        #                 'Smac' : (3E6, 2E7)}#,
+        #                 # 'CytoC' : (1E3 * min_f * 1E4, 1E3 * max_f * 1E4)}
 
     dim = len(space_params)
     param_percents = lhs(dim, samples=N)
@@ -213,13 +232,25 @@ def add_counts(param_df):
 save_dir = work_dir.joinpath('sim_params')
 
 def sim_and_save(i):
-    param_df = generate_param_sweep(1000)
-    param_df = add_times_from_sim(param_df, Differences_tags)
-    savename = save_dir.joinpath('xiapkc_off_xiap_1e3_thr_%02d.pandas' % i)
+    param_df = generate_param_sweep(100)
+    pdf_path = save_dir.joinpath('complex.pdf')
+    with PdfPages(str(pdf_path)) as pp:
+        param_df = add_times_from_sim(param_df, Differences_tags, pp)
+    savename = save_dir.joinpath('xiap_xiapkc_adiab_%03d.pandas' % i)
     param_df.to_pickle(str(savename))
     return i
 
-sim_and_save(1)
+# f = 300
+# rehms = {'Apaf': 372,
+#          'pC9' : 30,
+#          'pC3' : 120,
+#          'XIAP' : 63,
+#          'Smac' : 126}
+#
+# for key in rehms.keys():
+#     val = rehms[key] * 1E3 * f / 100
+#     cm.params[key].set(value=val)
+sim_and_save(0)
 
 # cors = 1
 # if __name__ == '__main__':
