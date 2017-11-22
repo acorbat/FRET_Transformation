@@ -102,9 +102,9 @@ def generate_param_sweep(N, space_params = None):
     if space_params is None:
         min_f = 2
         max_f = 3
-        space_params = {#'S3': (1E2, 1E7),
-                        # 'S8': (1E2, 1E7),
-                        # 'S9': (1E2, 1E7),
+        space_params = {'S3': (1E3, 1E4),
+                        'S8': (1E3, 1E4),
+                        'S9': (1E3, 1E4),
                         'XIAP_kc': (0, 0.05),
                         # 'CytoC' : (1E6, 5E6),
                         # 'Apaf': (14E5, 18E5),
@@ -250,7 +250,7 @@ def sim_and_save(i):
 # for key in rehms.keys():
 #     val = rehms[key] * 1E3 * f / 100
 #     cm.params[key].set(value=val)
-sim_and_save(0)
+sim_and_save(1)
 
 # cors = 1
 # if __name__ == '__main__':
