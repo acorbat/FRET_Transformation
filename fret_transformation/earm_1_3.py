@@ -30,12 +30,12 @@ class Model(object):
         self.yobs = None
         self.integrator = scipy.integrate.ode(self.ode_rhs, )
         self.integrator.set_integrator('vode', method='bdf', with_jacobian=True, rtol=1e-3, atol=1e-6)
-        self.y0 = numpy.empty(68)
-        self.ydot = numpy.empty(68)
-        self.sim_param_values = numpy.empty(223)
-        self.parameters = [None] * 223
+        self.y0 = numpy.empty(69)
+        self.ydot = numpy.empty(69)
+        self.sim_param_values = numpy.empty(224)
+        self.parameters = [None] * 224
         self.observables = [None] * 6
-        self.initial_conditions = [None] * 21
+        self.initial_conditions = [None] * 22
 
         self.parameters[0] = Parameter('L_0', 3000)
         self.parameters[1] = Parameter('pR_0', 1000)
@@ -256,12 +256,12 @@ class Model(object):
         self.parameters[215] = Parameter('C9S_ku', 5E-9)
         self.parameters[216] = Parameter('C9S_kd', 1E-3)
         self.parameters[217] = Parameter('C9S_kc', 1)
-        self.parameters[218] = Parameter('ks_S3', 0.435)
-        self.parameters[219] = Parameter('kdeg_S3', 2.9e-06)
-        self.parameters[220] = Parameter('ks_S8', 0.435)
-        self.parameters[221] = Parameter('kdeg_S8', 2.9e-06)
-        self.parameters[222] = Parameter('ks_S9', 0.435)
-        self.parameters[223] = Parameter('kdeg_S9', 2.9e-06)
+        self.parameters[218] = Parameter('ks_S3', 0)#0.435)
+        self.parameters[219] = Parameter('kdeg_S3', 0)#2.9E-06)
+        self.parameters[220] = Parameter('ks_S8', 0)#0.435)
+        self.parameters[221] = Parameter('kdeg_S8', 0)#2.9E-06)
+        self.parameters[222] = Parameter('ks_S9', 0)#0.435)
+        self.parameters[223] = Parameter('kdeg_S9', 0)#2.9E-06)
 
         self.observables[0] = Observable('Bid_unbound', [9], [1])
         self.observables[1] = Observable('PARP_unbound', [8], [1])
@@ -320,11 +320,11 @@ class Model(object):
         ydot[21] = p[20]*y[19] + p[25]*y[23] - p[21]*y[2]*y[21] - p[23]*y[21]*y[3] - p[88]*y[21] + p[22]*y[22] + p[24]*y[23] + p[130]*y[18]
         ydot[22] = -p[131]*y[22] + p[21]*y[2]*y[21] - p[22]*y[22] + p[132]*y[18]
         ydot[23] = -p[25]*y[23] - p[133]*y[23] + p[23]*y[21]*y[3] - p[24]*y[23] + p[134]*y[18]
-        ydot[24] = p[45]*y[27] + p[25]*y[23] + p[30]*y[26] + p[36]*y[39] - p[135]*y[24] - p[43]*y[24]*y[9] - p[26]*y[24]*y[4] - p[28]*y[24]*y[5] + p[44]*y[27] + p[27]*y[25] + p[29]*y[26] + p[136]*y[18] - p[212]*y[63]*[24] + p[213]*y[64] + p[214]*y[64]
+        ydot[24] = p[45]*y[27] + p[25]*y[23] + p[30]*y[26] + p[36]*y[39] - p[135]*y[24] - p[43]*y[24]*y[9] - p[26]*y[24]*y[4] - p[28]*y[24]*y[5] + p[44]*y[27] + p[27]*y[25] + p[29]*y[26] + p[136]*y[18] - p[212]*y[63]*y[24] + p[213]*y[64] + p[214]*y[64]
         ydot[25] = -p[137]*y[25] + p[26]*y[24]*y[4] - p[27]*y[25] + p[138]*y[18]
         ydot[26] = -p[30]*y[26] - p[139]*y[26] + p[28]*y[24]*y[5] - p[29]*y[26] + p[140]*y[18]
         ydot[27] = -p[45]*y[27] - p[141]*y[27] + p[43]*y[24]*y[9] - p[44]*y[27] + p[142]*y[18]
-        ydot[28] = p[81]*y[58] + p[30]*y[26] + p[33]*y[30] + p[42]*y[32] - p[143]*y[28] - p[31]*y[28]*y[6] - p[37]*y[28]*y[7] - p[40]*y[28]*y[8] + p[32]*y[30] + p[38]*y[31] + p[41]*y[32] + p[144]*y[18]  - p[209]*y[60]*[28] + p[210]*y[61] + p[211]*y[61]
+        ydot[28] = p[81]*y[58] + p[30]*y[26] + p[33]*y[30] + p[42]*y[32] - p[143]*y[28] - p[31]*y[28]*y[6] - p[37]*y[28]*y[7] - p[40]*y[28]*y[8] + p[32]*y[30] + p[38]*y[31] + p[41]*y[32] + p[144]*y[18]  - p[209]*y[60]*y[28] + p[210]*y[61] + p[211]*y[61]
         ydot[29] = p[45]*y[27] + p[50]*y[34] - p[145]*y[29] - p[46]*y[10]*y[29] - p[48]*y[11]*y[29] + p[47]*y[33] + p[49]*y[34] + p[146]*y[18]
         ydot[30] = -p[33]*y[30] - p[147]*y[30] + p[31]*y[28]*y[6] - p[32]*y[30] + p[148]*y[18]
         ydot[31] = -p[39]*y[31] - p[149]*y[31] + p[37]*y[28]*y[7] - p[38]*y[31] + p[150]*y[18]
@@ -353,20 +353,20 @@ class Model(object):
         ydot[54] = -p[76]*y[54] - p[193]*y[54] + p[74]*y[16]*y[52] - p[75]*y[54] + p[194]*y[18]
         ydot[55] = -p[195]*y[55] + p[86]*y[53]*y[7] - p[87]*y[55] + p[196]*y[18]
         ydot[56] = p[76]*y[54] - p[197]*y[56] - p[77]*y[17]*y[56] + p[78]*y[57] + p[198]*y[18]
-        ydot[57] = p[81]*y[58] - p[199]*y[57] + p[77]*y[17]*y[56] - p[79]*y[5]*y[57] - p[84]*y[57]*y[7] - p[78]*y[57] + p[80]*y[58] + p[85]*y[59] + p[200]*y[18]  - p[215]*y[66]*[57] + p[216]*y[67] + p[217]*y[67]
+        ydot[57] = p[81]*y[58] - p[199]*y[57] + p[77]*y[17]*y[56] - p[79]*y[5]*y[57] - p[84]*y[57]*y[7] - p[78]*y[57] + p[80]*y[58] + p[85]*y[59] + p[200]*y[18]  - p[215]*y[66]*y[57] + p[216]*y[67] + p[217]*y[67]
         ydot[58] = -p[81]*y[58] - p[201]*y[58] + p[79]*y[5]*y[57] - p[80]*y[58] + p[202]*y[18]
         ydot[59] = -p[203]*y[59] + p[84]*y[57]*y[7] - p[85]*y[59] + p[204]*y[18]
         # Add my Sensors
-        ydot[60] = p[218]*y[18] - p[219]*y[60] - p[209]*y[60]*[28] + p[210]*y[61]
-        ydot[61] = - p[219]*y[61] + p[209]*y[60]*[28] - p[210]*y[61] - p[211]*y[61]
+        ydot[60] = p[218]*y[18] - p[219]*y[60] - p[209]*y[60]*y[28] + p[210]*y[61]
+        ydot[61] = - p[219]*y[61] + p[209]*y[60]*y[28] - p[210]*y[61] - p[211]*y[61]
         ydot[62] = - p[219]*y[62] + p[211]*y[61]
 
-        ydot[63] = p[220]*y[18] - p[221]*y[63] - p[212]*y[63]*[24] + p[213]*y[64]
-        ydot[64] = - p[221]*y[64] + p[212]*y[63]*[24] - p[213]*y[64] - p[214]*y[64]
+        ydot[63] = p[220]*y[18] - p[221]*y[63] - p[212]*y[63]*y[24] + p[213]*y[64]
+        ydot[64] = - p[221]*y[64] + p[212]*y[63]*y[24] - p[213]*y[64] - p[214]*y[64]
         ydot[65] = - p[221]*y[65] + p[214]*y[64]
 
-        ydot[66] = p[222]*y[18] - p[223]*y[66] - p[215]*y[66]*[57] + p[216]*y[67]
-        ydot[67] = - p[223]*y[67] + p[215]*y[66]*[57] - p[216]*y[67] - p[217]*y[67]
+        ydot[66] = p[222]*y[18] - p[223]*y[66] - p[215]*y[66]*y[57] + p[216]*y[67]
+        ydot[67] = - p[223]*y[67] + p[215]*y[66]*y[57] - p[216]*y[67] - p[217]*y[67]
         ydot[68] = - p[223]*y[68] + p[217]*y[67]
         return ydot
 
@@ -385,12 +385,7 @@ class Model(object):
             self.y0[ic.species_index] = self.sim_param_values[ic.param_index]
         if self.y is None or len(tspan) != len(self.y):
             self.y = numpy.empty((len(tspan), len(self.y0)))
-            if len(self.observables):
-                self.yobs = numpy.ndarray(len(tspan), zip((obs.name for obs in self.observables),
-                                                          itertools.repeat(float)))
-            else:
-                self.yobs = numpy.ndarray((len(tspan), 0))
-            self.yobs_view = self.yobs.view(float).reshape(len(self.yobs), -1)
+
         # perform the actual integration
         self.integrator.set_initial_value(self.y0, tspan[0])
         self.integrator.set_f_params(self.sim_param_values)
@@ -399,15 +394,6 @@ class Model(object):
         while self.integrator.successful() and self.integrator.t < tspan[-1]:
             self.y[t] = self.integrator.integrate(tspan[t])
             t += 1
-        for i, obs in enumerate(self.observables):
-            self.yobs_view[:, i] = \
-                (self.y[:, obs.species] * obs.coefficients).sum(1)
-        if view:
-            y_out = self.y.view()
-            yobs_out = self.yobs.view()
-            for a in y_out, yobs_out:
-                a.flags.writeable = False
-        else:
-            y_out = self.y.copy()
-            yobs_out = self.yobs.copy()
-        return (y_out, yobs_out)
+
+        y_out = self.y.copy()
+        return y_out
