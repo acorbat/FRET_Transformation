@@ -251,6 +251,25 @@ class Model(object):
         self.parameters[203] = Parameter('kdeg_Apop_XIAP', 2.9e-06)
         self.parameters[204] = Parameter('ks_Apop_XIAP', 0)
         self.parameters[205] = Parameter('__source_0', 1)
+        #Add my Sensors
+        self.parameters[206] = Parameter('S3', 1E3)
+        self.parameters[207] = Parameter('S8', 1E3)
+        self.parameters[208] = Parameter('S9', 1E3)
+        self.parameters[209] = Parameter('C3S_ku', 1E-6)
+        self.parameters[210] = Parameter('C3S_kd', 1E-2)
+        self.parameters[211] = Parameter('C3S_kc', 1)
+        self.parameters[212] = Parameter('C8S_ku', 1E-7)
+        self.parameters[213] = Parameter('C8S_kd', 1E-3)
+        self.parameters[214] = Parameter('C8S_kc', 1)
+        self.parameters[215] = Parameter('C9S_ku', 5E-9)
+        self.parameters[216] = Parameter('C9S_kd', 1E-3)
+        self.parameters[217] = Parameter('C9S_kc', 1)
+        self.parameters[218] = Parameter('ks_S3', 0.435)
+        self.parameters[219] = Parameter('kdeg_S3', 2.9e-06)
+        self.parameters[220] = Parameter('ks_S8', 0.435)
+        self.parameters[221] = Parameter('kdeg_S8', 2.9e-06)
+        self.parameters[222] = Parameter('ks_S9', 0.435)
+        self.parameters[223] = Parameter('kdeg_S9', 2.9e-06)
 
         self.observables[0] = Observable('Bid_unbound', [9], [1])
         self.observables[1] = Observable('PARP_unbound', [8], [1])
@@ -278,6 +297,9 @@ class Model(object):
         self.initial_conditions[16] = Initial(17, 16)
         self.initial_conditions[17] = Initial(16, 17)
         self.initial_conditions[18] = Initial(205, 18)
+        self.initial_conditions[19] = Initial(206, 60)
+        self.initial_conditions[20] = Initial(207, 63)
+        self.initial_conditions[21] = Initial(208, 66)
 
     if _use_inline:
 
@@ -375,11 +397,11 @@ class Model(object):
             ydot[21] = p[20]*y[19] + p[25]*y[23] - p[21]*y[2]*y[21] - p[23]*y[21]*y[3] - p[88]*y[21] + p[22]*y[22] + p[24]*y[23] + p[130]*y[18]
             ydot[22] = -p[131]*y[22] + p[21]*y[2]*y[21] - p[22]*y[22] + p[132]*y[18]
             ydot[23] = -p[25]*y[23] - p[133]*y[23] + p[23]*y[21]*y[3] - p[24]*y[23] + p[134]*y[18]
-            ydot[24] = p[45]*y[27] + p[25]*y[23] + p[30]*y[26] + p[36]*y[39] - p[135]*y[24] - p[43]*y[24]*y[9] - p[26]*y[24]*y[4] - p[28]*y[24]*y[5] + p[44]*y[27] + p[27]*y[25] + p[29]*y[26] + p[136]*y[18]
+            ydot[24] = p[45]*y[27] + p[25]*y[23] + p[30]*y[26] + p[36]*y[39] - p[135]*y[24] - p[43]*y[24]*y[9] - p[26]*y[24]*y[4] - p[28]*y[24]*y[5] + p[44]*y[27] + p[27]*y[25] + p[29]*y[26] + p[136]*y[18] - p[212]*y[63]*[24] + p[213]*y[64] + p[214]*y[64]
             ydot[25] = -p[137]*y[25] + p[26]*y[24]*y[4] - p[27]*y[25] + p[138]*y[18]
             ydot[26] = -p[30]*y[26] - p[139]*y[26] + p[28]*y[24]*y[5] - p[29]*y[26] + p[140]*y[18]
             ydot[27] = -p[45]*y[27] - p[141]*y[27] + p[43]*y[24]*y[9] - p[44]*y[27] + p[142]*y[18]
-            ydot[28] = p[81]*y[58] + p[30]*y[26] + p[33]*y[30] + p[42]*y[32] - p[143]*y[28] - p[31]*y[28]*y[6] - p[37]*y[28]*y[7] - p[40]*y[28]*y[8] + p[32]*y[30] + p[38]*y[31] + p[41]*y[32] + p[144]*y[18]
+            ydot[28] = p[81]*y[58] + p[30]*y[26] + p[33]*y[30] + p[42]*y[32] - p[143]*y[28] - p[31]*y[28]*y[6] - p[37]*y[28]*y[7] - p[40]*y[28]*y[8] + p[32]*y[30] + p[38]*y[31] + p[41]*y[32] + p[144]*y[18]  - p[209]*y[60]*[28] + p[210]*y[61] + p[211]*y[61]
             ydot[29] = p[45]*y[27] + p[50]*y[34] - p[145]*y[29] - p[46]*y[10]*y[29] - p[48]*y[11]*y[29] + p[47]*y[33] + p[49]*y[34] + p[146]*y[18]
             ydot[30] = -p[33]*y[30] - p[147]*y[30] + p[31]*y[28]*y[6] - p[32]*y[30] + p[148]*y[18]
             ydot[31] = -p[39]*y[31] - p[149]*y[31] + p[37]*y[28]*y[7] - p[38]*y[31] + p[150]*y[18]
@@ -408,9 +430,21 @@ class Model(object):
             ydot[54] = -p[76]*y[54] - p[193]*y[54] + p[74]*y[16]*y[52] - p[75]*y[54] + p[194]*y[18]
             ydot[55] = -p[195]*y[55] + p[86]*y[53]*y[7] - p[87]*y[55] + p[196]*y[18]
             ydot[56] = p[76]*y[54] - p[197]*y[56] - p[77]*y[17]*y[56] + p[78]*y[57] + p[198]*y[18]
-            ydot[57] = p[81]*y[58] - p[199]*y[57] + p[77]*y[17]*y[56] - p[79]*y[5]*y[57] - p[84]*y[57]*y[7] - p[78]*y[57] + p[80]*y[58] + p[85]*y[59] + p[200]*y[18]
+            ydot[57] = p[81]*y[58] - p[199]*y[57] + p[77]*y[17]*y[56] - p[79]*y[5]*y[57] - p[84]*y[57]*y[7] - p[78]*y[57] + p[80]*y[58] + p[85]*y[59] + p[200]*y[18]  - p[215]*y[66]*[57] + p[216]*y[67] + p[217]*y[67]
             ydot[58] = -p[81]*y[58] - p[201]*y[58] + p[79]*y[5]*y[57] - p[80]*y[58] + p[202]*y[18]
             ydot[59] = -p[203]*y[59] + p[84]*y[57]*y[7] - p[85]*y[59] + p[204]*y[18]
+            # Add my Sensors
+            ydot[60] = p[218]*y[18] - p[219]*y[60] - p[209]*y[60]*[28] + p[210]*y[61]
+            ydot[61] = - p[219]*y[61] + p[209]*y[60]*[28] - p[210]*y[61] - p[211]*y[61]
+            ydot[62] = - p[219]*y[62] + p[211]*y[61]
+
+            ydot[63] = p[220]*y[18] - p[221]*y[63] - p[212]*y[63]*[24] + p[213]*y[64]
+            ydot[64] = - p[221]*y[64] + p[212]*y[63]*[24] - p[213]*y[64] - p[214]*y[64]
+            ydot[65] = - p[221]*y[65] + p[214]*y[64]
+
+            ydot[66] = p[222]*y[18] - p[223]*y[66] - p[215]*y[66]*[57] + p[216]*y[67]
+            ydot[67] = - p[223]*y[67] + p[215]*y[66]*[57] - p[216]*y[67] - p[217]*y[67]
+            ydot[68] = - p[223]*y[68] + p[217]*y[67]
             return ydot
 
 
