@@ -376,7 +376,7 @@ class Model(object):
             # accept vector of parameter values as an argument
             if len(param_values) != len(self.parameters):
                 raise Exception("param_values must have length %d" % len(self.parameters))
-            self.sim_param_values[:] = param_values
+            self.sim_param_values[:] = [p.value for p in param_values]
         else:
             # create parameter vector from the values in the model
             self.sim_param_values[:] = [p.value for p in self.parameters]
