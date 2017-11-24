@@ -266,7 +266,7 @@ def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=
                     ind = np.clip(ind, 0, len(r)-1)
                     return r[ind]
 
-                r_der = derivative(this_vect, time, dx=timepoints, order=order)
+                r_der = [derivative(this_vect, inst, dx=timepoints, order=order) for inst in time]
 
                 t = np.arange(0, len(r)*timepoints)
                 f = splrep(time, r_der, k=3, s=0)
