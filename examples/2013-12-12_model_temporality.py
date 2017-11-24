@@ -11,13 +11,14 @@ from pyDOE import lhs
 from matplotlib.backends.backend_pdf import PdfPages
 
 #sys.path.append(os.path.abspath('/mnt/data/Laboratorio/Imaging three sensors/FRET_Transformation'))
-from fret_transformation import caspase_model as cm
+from fret_transformation import earm_1_3 as earm
 from fret_transformation import transformation as tf
 from fret_transformation import anisotropy_functions as af
 from fret_transformation import caspase_fit as cf
 from fret_transformation import time_study as ts
 from multiprocessing import Pool
 
+cm = earm.Model()
 #os.system("taskset -p 0xff %d" % os.getpid())
 #%% Load data
 work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
@@ -32,9 +33,10 @@ Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 
 def timedif_from_params(params, Differences_tags, pp=None):
     t = np.arange(0, 72000, 600)
-    sim = cm.simulate(t, params)
+    res = cm.simulate(t, param_values=params)
 
-    sim = sim_to_ani(sim)
+    sim = sim_to_ani(res)
+    sim['t'] = [t/60]
 
     sim_aborted = {}
     for fluo in fluorophores:
@@ -55,6 +57,7 @@ def timedif_from_params(params, Differences_tags, pp=None):
             for fluo in fluorophores:
                 if len(sim[fluo+'_r_complex'].values[0]) == len(sim.t.values[0]):
                     plt.plot(sim.t.values[0], sim[fluo+'_r_complex'].values[0], 'x'+Colors[fluo])
+
                 plt.scatter(sim[fluo+'_max_activity'].values, [0]*len(sim[fluo+'_max_activity'].values), color=Colors[fluo])
                 note = note + str(sim[fluo+'_max_activity'][0]) + '\n'
             pp.attach_note(note, positionRect=[100,100,100,100])
@@ -70,24 +73,25 @@ def timedif_from_params(params, Differences_tags, pp=None):
 
 
 
-def sim_to_ani(df, col='r_from_i'):
-    fluo_to_cas = {'YFP': 'SC9',
-                   'mKate': 'SC8',
-                   'TFP': 'SC3'}
+def sim_to_ani(res, col='r_from_i'):
+    fluo_to_cas = {'YFP': 68,
+                   'mKate': 65,
+                   'TFP': 62}
     fluo_to_ani = {'YFP': (.22, .3),
                    'mKate': (.23, .28),
                    'TFP': (.28, .34)}
 
+    df = pd.DataFrame()
     for fluo in fluo_to_cas.keys():
-        sens_norm = [sens/np.nanmax(sens)
-                     for sens in df[fluo_to_cas[fluo]].values]
+        sens = res[:, fluo_to_cas[fluo]]
+        sens_norm = sens/np.nanmax(sens)
         anis = [af.Anisotropy_FromFit(m,
                                       fluo_to_ani[fluo][1],
                                       fluo_to_ani[fluo][0],
                                       1)
                 for m in sens_norm]
 
-        df['_'.join([fluo, col])] = anis
+        df['_'.join([fluo, col])] = [anis]
 
     return df
 
@@ -100,15 +104,15 @@ def sim_to_ani(df, col='r_from_i'):
 
 def generate_param_sweep(N, space_params = None):
     if space_params is None:
-        min_f = 2
-        max_f = 3
-        space_params = {'S3': (1E3, 1E4),
-                        'S8': (1E3, 1E4),
-                        'S9': (1E3, 1E4),
-                        'XIAP_kc': (0, 0.05),
+        min_s = 1E2
+        max_s = 1E7
+        space_params = {206: (min_s, max_s),
+                        207: (min_s, max_s),
+                        208: (min_s, max_s)}#,
+                        # 'XIAP_kc': (0, 0.05),
                         # 'CytoC' : (1E6, 5E6),
                         # 'Apaf': (14E5, 18E5),
-                        'XIAP': (1E2, 1E3)}
+                        # 'XIAP': (1E2, 1E3)}
                         # 'C3S_ku': (0.5e-6, 2e-6),
                         # 'C8S_ku': (0.5e-7, 2e-7),
                         # 'C9S_ku': (2.5e-9, 9e-9)}#,
@@ -157,12 +161,18 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
     for tag in Differences_tags:
         param_df[tag] = np.nan
 
-
+    for i in range(len(cm.parameters)):
+        if cm.parameters[i].name.startswith('ks'):
+            cm.parameters[i] = earm.Parameter(cm.parameters[i].name, 0*cm.parameters[i].value)
+    cm.parameters[5] = earm.Parameter('pC3_0', 100000)
+    cm.parameters[7] = earm.Parameter('XIAP_0', 10000)
+    # cm.parameters[10] = earm.Parameter('Mcl1_0', 200)
+    cm.parameters[39] = earm.Parameter('kc8', 0.1)
     for i in param_df.index:
         print(i)
         for col in var_cols:
-            cm.params[col].set(value=param_df[col][i])
-        difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
+            cm.parameters[col] = earm.Parameter(cm.parameters[col].name, param_df[col][i])
+        difs = timedif_from_params(cm.parameters, Differences_tags, pp=pp)
 
         for tag in Differences_tags:
             param_df = param_df.set_value(i, tag, difs[tag])
@@ -232,11 +242,11 @@ def add_counts(param_df):
 save_dir = work_dir.joinpath('sim_params')
 
 def sim_and_save(i):
-    param_df = generate_param_sweep(100)
+    param_df = generate_param_sweep(10)
     pdf_path = save_dir.joinpath('complex.pdf')
     with PdfPages(str(pdf_path)) as pp:
         param_df = add_times_from_sim(param_df, Differences_tags, pp)
-    savename = save_dir.joinpath('xiap_xiapkc_adiab_%03d.pandas' % i)
+    savename = save_dir.joinpath('earm13_xiap_1e2_xiapdeg_00_%03d.pandas' % i)
     param_df.to_pickle(str(savename))
     return i
 
@@ -250,7 +260,7 @@ def sim_and_save(i):
 # for key in rehms.keys():
 #     val = rehms[key] * 1E3 * f / 100
 #     cm.params[key].set(value=val)
-sim_and_save(1)
+sim_and_save(0)
 
 # cors = 1
 # if __name__ == '__main__':
