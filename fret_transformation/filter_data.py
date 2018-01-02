@@ -7,9 +7,9 @@ Created on Fri Aug  4 15:49:25 2017
 import numpy as np
 import matplotlib.pyplot as plt
 
-import anisotropy_functions as af
-import transformation as tf
-import caspase_fit as cf
+from fret_transformation import anisotropy_functions as af
+from fret_transformation import transformation as tf
+from fret_transformation import caspase_fit as cf
 
 
 #%% Define constants to be used
@@ -42,7 +42,7 @@ def r_from_i_to_df(df):
 def apoptotic_popts(base, amplitude, rate, x0):
     """
     Quick checks that parameters of sigmoid are within possible range.
-    
+
     0.1<base<0.5
     0.001<amplitude<0.5
     0<rate
@@ -60,7 +60,7 @@ def ask_question(question='?'):
     c= 0
     while c<=3:
         response = input(question)
-        
+
         if response=='y':
             return True
         elif response=='n':
@@ -85,9 +85,9 @@ def general_fit(df, y_col='r_from_i'):
             except:
                 this_popt = [np.nan]*4
                 this_popt = [this_popt]
-            
+
             this_popts.append(this_popt)
-            
+
         df[fluo+'_first_popts'] = this_popts
     return df
 
@@ -110,19 +110,19 @@ def first_filter(df, col_to_filter='r_from_i'):
                 plt.title(fluo+' '+str(i))
                 plt.ylim((0.22, 0.35))
                 plt.show()
-                
+
                 answer = ask_question(question='is this an apoptotic curve?')
                 ok_1.append(answer)
             else:
                 ok_1.append(False)
-            
+
         df[fluo+'_ok_1'] = ok_1
     return df
 
 
 def second_filter(df, col_to_filter='r_from_i'):
     """
-    Sweeps through the accepted as apoptotic curves asking which of the plausible 
+    Sweeps through the accepted as apoptotic curves asking which of the plausible
     popts is the best.
     """
     for fluo in fluorophores:
@@ -140,34 +140,34 @@ def second_filter(df, col_to_filter='r_from_i'):
                                 plt.plot(time_fine, cf.sigmoid(time_fine, *_popt),'--')
                             plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
                             plt.plot(time_fine, cf.sigmoid(time_fine, *popt))
-                            
+
                             plt.title(fluo+' '+str(i)+' '+str(c))
                             plt.ylim((0.2, 0.35))
                             plt.show()
-                            
+
                             answer = ask_question(question='is this the best popt?')
                             these_popts.append(answer)
                         else:
                             these_popts.append(False)
-                    
+
                 else:
                     if apoptotic_popts(*popts):
                         plt.plot(time_coarse, df[fluo+'_'+col_to_filter][i])
                         plt.plot(time_fine, cf.sigmoid(time_fine, *popts))
                         plt.ylim((0.2, 0.35))
                         plt.show()
-                        
+
                         answer = ask_question(question='is this a good popt?')
-                        
+
                         these_popts.append(answer)
                     else:
                         these_popts.append(False)
             else:
                 these_popts.append(False)
-                
+
             best_popts.append(these_popts)
         df[fluo+'_best_popts'] = best_popts
-        
+
     return df
 
 
@@ -180,7 +180,7 @@ def set_popts(df):
         amps = []
         rates = []
         x0s = []
-        
+
         for i in df.index:
             popts = df[fluo+'_first_popts'][i]
             best_popt = df[fluo+'_best_popts'][i]
@@ -190,12 +190,12 @@ def set_popts(df):
                         base, amplitude, rate, x0 = popt
             else:
                 base, amplitude, rate, x0 = [np.nan]*4
-            
+
             bases.append(base)
             amps.append(amplitude)
             rates.append(rate)
             x0s.append(x0)
-        
+
         df[fluo+'_amplitude'] = amps
         df[fluo+'_base'] = bases
         df[fluo+'_rate'] = rates
@@ -222,7 +222,51 @@ def add_pre_post(df, col, colname, timepoints=10):
             else:
                 posts.append(np.nan)
                 pres.append(np.nan)
-        
+
         df[fluo+'_'+colname+'_pre'] = pres
         df[fluo+'_'+colname+'_pos'] = posts
+    return df
+
+
+def filter_derived(df, col_r='r_from_i', timepoints=10):
+    """
+    Sweeps through the derived curves asking which of the curves is adequately
+    derived.
+    """
+    for fluo in fluorophores:
+        good_der = []
+        for i in df.index:
+            if np.isfinite(df[fluo+'_max_activity'][i]):
+                # make subplots
+                r = df['_'.join([fluo, col_r])][i]
+                r = tf.replace_nan(r)
+                time = np.arange(0, len(r)*timepoints, timepoints)
+
+                x0 = df[fluo+'_x0'][i]
+                rate = df[fluo+'_rate'][i]
+                r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
+                this_time = time[ind:ind+len(r_reg)]
+                r_der = df[fluo+'_r_complex'][i]
+                max_act = df[fluo+'_max_activity'][i]
+
+                fig, axs = plt.subplots(2,1, sharex=True, figsize=(10,12))
+                axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
+                axs[0].set_ylabel('fraction')
+
+                axs[1].plot(this_time, r_der[ind:ind+len(r_reg)])
+                axs[1].plot(max_act, np.nanmax(r_der), 'o'+Colors[fluo])
+                axs[1].set_ylabel('complex')
+                axs[1].set_xlabel('time (min.)')
+
+                plt.suptitle('obj:'+str(i)+' exp:'+df.Content[i]+' max:'+str(max_act))
+                plt.show()
+                
+                # Ask question
+                answer = ask_question(question='is this a good derivation?')
+                good_der.append(answer)
+            else:
+                good_der.append(False)
+
+        df[fluo+'_good_der'] = good_der
+
     return df
