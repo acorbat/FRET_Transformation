@@ -9,10 +9,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from pyDOE import lhs
 from scipy.interpolate import splrep, splev
 from scipy.misc import derivative
 
 from fret_transformation.transformation import get_max_ind
+from fret_transformation import anisotropy_functions as af
 from fret_transformation import caspase_model as cm
 
 def add_differences(df, fluorophores=['YFP','mKate','TFP'], time_col='max_activity', Difference_tags=None):
@@ -103,7 +105,7 @@ def generate_param_sweep(N, space_params = None):
     return param_df
 
 
-def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 'TFP'], pp=None):
+def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 'TFP'], pp=None, Colors={'YFP': 'y', 'mKate': 'r', 'TFP': 'g'}):
     """
     Runs a simulation with the given set of parameters and calculates the
     corresponding time difference using the Differences_tags. If the receives a
@@ -142,7 +144,7 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         t = np.arange(0, len(r)*10, 10)
         sim_aborted[fluo] = r[0]==r[-1]
 
-    if not any(sim[fluo+'_base'].values == np.nan):
+    if not any(sim_aborted.values()):
         sim = find_complex_in_sim(sim)
 
         if pp is not None:
@@ -155,11 +157,11 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
                     plt.plot(sim.t.values[0], sim[fluo+'_r_complex'].values[0], 'x'+Colors[fluo])
                 plt.scatter(sim[fluo+'_max_activity'].values, [0]*len(sim[fluo+'_max_activity'].values), color=Colors[fluo])
                 note = note + str(sim[fluo+'_max_activity'][0]) + '\n'
-            pp.attach_note(note, positionRect=[100,100,100,100])
+            pp.attach_note(note, positionRect=[100, 100, 100, 100])
             pp.savefig()
             plt.close()
 
-        sim = ts.add_differences(sim, Difference_tags=Differences_tags)
+        sim = add_differences(sim, Difference_tags=Differences_tags)
         difs = {tag: sim[tag].values for tag in Differences_tags}
     else:
         difs = {tag: np.nan for tag in Differences_tags}
@@ -200,7 +202,6 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
 
     for tag in Differences_tags:
         param_df[tag] = np.nan
-
 
     for i in param_df.index:
         print(i)
@@ -340,8 +341,8 @@ def plot_polarhist(x, y, plot_scatter=False):
         plt.polar(p, ls='', marker='o')
 
 
-def plot_scatter_times(x, y, marker='o', color=None):
-    """Scatter plot of data in x,y colores according to quadrant by default."""
+def plot_scatter_times(x, y, marker='o', color=None, zoom=True):
+    """Scatter plot of data in x,y colors according to quadrant by default."""
     if color is None:
         color = ['r' if this_x>=0 and this_y>=0
         else 'b' if this_x>=0 and this_y<0
@@ -350,8 +351,9 @@ def plot_scatter_times(x, y, marker='o', color=None):
         for this_x, this_y in zip(x, y)]
 
     plt.scatter(x, y, c=color, marker=marker, alpha=0.5)
-    #plt.xlim((-35,35))
-    #plt.ylim((-35,35))
+    if zoom:
+        plt.xlim((-35, 35))
+        plt.ylim((-35, 35))
     plt.xlabel('TFP_to_YFP')
     plt.ylabel('TFP_to_mKate')
     ax = plt.gca()
