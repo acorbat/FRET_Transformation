@@ -247,13 +247,19 @@ def filter_derived(df, col_r='r_from_i', timepoints=10):
                 r_reg, ind = tf.sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
                 this_time = time[ind:ind+len(r_reg)]
                 r_der = df[fluo+'_r_complex'][i]
+                r_der = r_der[ind:ind+len(r_reg)]
                 max_act = df[fluo+'_max_activity'][i]
 
-                fig, axs = plt.subplots(2,1, sharex=True, figsize=(10,12))
+                fig, axs = plt.subplots(2,1, sharex=True, figsize=(8,9))
+                for this_fluo in fluorophores:
+                    st = np.clip(ind-10, 0, len(r))
+                    en = np.clip(ind+len(r_reg)+10, 0, len(r))
+                    this_r_reg = df['_'.join([this_fluo, col_r])][i][st:en]
+                    axs[0].plot(time[st:en], this_r_reg, '--'+Colors[this_fluo], alpha=0.5)
                 axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
                 axs[0].set_ylabel('fraction')
 
-                axs[1].plot(this_time, r_der[ind:ind+len(r_reg)])
+                axs[1].plot(this_time, r_der)
                 axs[1].plot(max_act, np.nanmax(r_der), 'o'+Colors[fluo])
                 axs[1].set_ylabel('complex')
                 axs[1].set_xlabel('time (min.)')

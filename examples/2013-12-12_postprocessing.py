@@ -1,11 +1,12 @@
 import pathlib
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 from fret_transformation import filter_data as fd
 from fret_transformation import time_study as ts
 
-data_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
+data_dir = pathlib.Path(r'E:\Laboratorio\Imaging three sensors\2017-09-04_Images')
 data_dir = data_dir.joinpath('2017-10-16_complex_noErode_order05.pandas')
 data = pd.read_pickle(str(data_dir))
 
