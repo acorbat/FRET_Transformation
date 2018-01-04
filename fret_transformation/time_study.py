@@ -148,7 +148,8 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         sim = find_complex_in_sim(sim)
 
         if pp is not None:
-            plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
+            for fluo in fluorophores:
+                plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
             pp.savefig()
             plt.close()
             note = ''
@@ -193,11 +194,14 @@ def sim_to_ani(df, col='r_from_i'):
     return df
 
 
-def add_times_from_sim(param_df, Differences_tags, pp=None):
+def add_times_from_sim(param_df, Differences_tags, pp=None, params=None):
     """Takes a DataFrame with parameters to variate and runs the simulation for
     each set of parameters, adding columns with the Differences_tags specified.
     Plots of the fits and derivations can be saved in pdf to PdfPages object as
     pp."""
+    if params is None:
+        params = cm.params
+
     var_cols = param_df.columns
 
     for tag in Differences_tags:
@@ -206,7 +210,7 @@ def add_times_from_sim(param_df, Differences_tags, pp=None):
     for i in param_df.index:
         print(i)
         for col in var_cols:
-            cm.params[col].set(value=param_df[col][i])
+            params[col].set(value=param_df[col][i])
         difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
 
         for tag in Differences_tags:

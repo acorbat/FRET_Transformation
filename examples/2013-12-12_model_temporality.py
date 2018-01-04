@@ -38,9 +38,9 @@ Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 # 'XIAP' : (1E3 * min_f * 63, 1E3 * max_f * 63),
 # 'Smac' : (1E3 * min_f * 126, 1E3 * max_f * 126)}#,
 # 'CytoC' : (1E3 * min_f * 1E4, 1E3 * max_f * 1E4)}
-sweep_space = {'S3': (1E4, 1E6),
-               'S8': (1E4, 1E6),
-               'S9': (1E4, 1E6)}  # ,
+sweep_space = {'S3': (1E6, 1E7),
+               'S8': (1E6, 1E7),
+               'S9': (1E6, 1E7)}  # ,
 #                 # 'C3S_ku': (0.5e-6, 2e-6),
 #                 # 'C8S_ku': (0.5e-7, 2e-7),
 #                 # 'C9S_ku': (2.5e-9, 9e-9)}#,
@@ -55,15 +55,15 @@ sweep_space = {'S3': (1E4, 1E6),
 save_dir = work_dir.joinpath('sim_params')
 
 
-def sim_and_save(i):
+def sim_and_save(name, other_params):
     param_df = ts.generate_param_sweep(100, space_params=sweep_space)
-    savename = save_dir.joinpath('earm10_%03d.pandas' % i)
+    savename = save_dir.joinpath(name)
     pdf_path = savename.with_suffix('.pdf')
     with PdfPages(str(pdf_path)) as pp:
-        param_df = ts.add_times_from_sim(param_df, Differences_tags, pp)
+        param_df = ts.add_times_from_sim(param_df, Differences_tags, pp, params=other_params)
     param_df.to_pickle(str(savename))
 
-    pdf_path = pdf_path.with_name(pdf_path.stem+'_map')
+    pdf_path = pdf_path.with_name(pdf_path.stem+'_map.pdf')
     with PdfPages(str(pdf_path)) as pp:
         ts.plot_scatter_times(df.TFP_to_YFP.values, df.TFP_to_mKate.values)
         ts.plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k')
@@ -78,4 +78,28 @@ def sim_and_save(i):
 
     return param_df
 
-sim_res = sim_and_save(0)
+
+xiap = [2, 3, 4]
+xiap_deg = [.05, .01, .005, 0]
+fs = np.arange(1, 6.2, 1)
+
+for this_xiap in xiap:
+    for this_xiap_deg in xiap_deg:
+        name = 'earm10_varxiap_%01d_varxiapdeg_%03d.pandas' % (this_xiap, this_xiap_deg*100)
+        this_params = cm.params
+        this_params['XIAP'].set(value=10 ** this_xiap)
+        this_params['XIAP_kc'].set(value=this_xiap_deg)
+        sim_res = sim_and_save(name, this_params)
+
+for f in fs:
+    name = 'earm10_prop_%01d.pandas' % f
+    this_params = cm.params
+    this_vals = {'Apaf': f * 372,
+                 'pC9': f * 30,
+                 'pC3': f * 120,
+                 'XIAP': f * 63,
+                 'Smac': f * 126,
+                 'CytoC': f * 1E4}
+    for key, item in this_vals.items():
+        this_params[key].set(value=item)
+    sim_res = sim_and_save(name, this_params)
