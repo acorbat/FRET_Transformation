@@ -108,7 +108,7 @@ def generate_param_sweep(N, space_params = None):
 def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 'TFP'], pp=None, Colors={'YFP': 'y', 'mKate': 'r', 'TFP': 'g'}):
     """
     Runs a simulation with the given set of parameters and calculates the
-    corresponding time difference using the Differences_tags. If the receives a
+    corresponding time difference using the Differences_tags. If it receives a
     pp PdfPages object, it saves the simulation and fit to a pdf.
 
     Simulation is done with 10 minutes resolution as well as the fit in search
