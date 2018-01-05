@@ -134,8 +134,10 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         calculated using the Differences_tags list.
     """
     t = np.arange(0, 72000, 600)
+    earm_sim = cm.simulate(t, cm.params)
     sim = cm.simulate(t, params)
 
+    earm_sim = sim_to_ani(earm_sim)
     sim = sim_to_ani(sim)
 
     sim_aborted = {}
@@ -152,6 +154,7 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
                 plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
             pp.savefig()
             plt.close()
+
             note = ''
             for fluo in fluorophores:
                 if len(sim[fluo+'_r_complex'].values[0]) == len(sim.t.values[0]):
@@ -159,6 +162,11 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
                 plt.scatter(sim[fluo+'_max_activity'].values, [0]*len(sim[fluo+'_max_activity'].values), color=Colors[fluo])
                 note = note + str(sim[fluo+'_max_activity'][0]) + '\n'
             pp.attach_note(note, positionRect=[100, 100, 100, 100])
+            pp.savefig()
+            plt.close()
+
+            for fluo in fluorophores:
+                plt.plot(earm_sim.t.values[0], sim[fluo+'_r_from_i'].values[0]/earm_sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
             pp.savefig()
             plt.close()
 
@@ -211,7 +219,7 @@ def add_times_from_sim(param_df, Differences_tags, pp=None, params=None):
         print(i)
         for col in var_cols:
             params[col].set(value=param_df[col][i])
-        difs = timedif_from_params(cm.params, Differences_tags, pp=pp)
+        difs = timedif_from_params(params, Differences_tags, pp=pp)
 
         for tag in Differences_tags:
             param_df = param_df.set_value(i, tag, difs[tag])
