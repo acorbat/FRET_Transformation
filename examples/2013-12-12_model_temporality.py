@@ -79,27 +79,57 @@ def sim_and_save(name, other_params):
     return param_df
 
 
-xiap = [2, 3, 4]
-xiap_deg = [.05, .01, .005, 0]
-fs = np.arange(1, 6.2, 1)
+# xiap = [2, 3, 4]
+# xiap_deg = [.05, .01, .005, 0]
+# xiap_ku = np.arange(2, 6.2, 1)
+# fs = np.arange(2, 3.1, 0.1)
 
-for this_xiap in xiap:
-    for this_xiap_deg in xiap_deg:
-        name = 'earm10_varxiap_%01d_varxiapdeg_%03d.pandas' % (this_xiap, this_xiap_deg*100)
-        this_params = cm.params
-        this_params['XIAP'].set(value=10 ** this_xiap)
-        this_params['XIAP_kc'].set(value=this_xiap_deg)
-        sim_res = sim_and_save(name, this_params)
+# for this_xiap in xiap:
+#     for this_xiap_deg in xiap_deg:
+#         name = 'earm10_varxiap_%01d_varxiapdeg_%03d.pandas' % (this_xiap, this_xiap_deg*100)
+#         this_params = cm.params
+#         this_params['XIAP'].set(value=10 ** this_xiap)
+#         this_params['XIAP_kc'].set(value=this_xiap_deg)
+#         sim_res = sim_and_save(name, this_params)
 
-for f in fs:
-    name = 'earm10_prop_%01d.pandas' % f
-    this_params = cm.params
-    this_vals = {'Apaf': f * 372,
-                 'pC9': f * 30,
-                 'pC3': f * 120,
-                 'XIAP': f * 63,
-                 'Smac': f * 126,
-                 'CytoC': f * 1E4}
-    for key, item in this_vals.items():
-        this_params[key].set(value=item)
-    sim_res = sim_and_save(name, this_params)
+# for this_xiap_ku in xiap_ku:
+#     name = 'earm10_varxiapku_%01d.pandas' % this_xiap_ku
+#     this_params = cm.params
+#     this_params['XIAP_ku'].set(value=2 / (10 ** this_xiap_ku))
+#     sim_res = sim_and_save(name, this_params)
+
+# for f in fs:
+#     name = 'earm10_prop4_%03d.pandas' % (f*100)
+#     f = 10 ** f
+#     this_params = cm.params
+#     this_vals = {'Apaf': f * 372,
+#                  'pC9': f * 30,
+#                  'pC3': f * 120,
+#                  'XIAP': f * 63}  # ,
+#                  # 'Smac': f * 126}  # ,
+#                  # 'CytoC': f * 1E4}
+#     for key, item in this_vals.items():
+#         this_params[key].set(value=item)
+#     sim_res = sim_and_save(name, this_params)
+
+name = 'earm13inivals.pandas'
+this_params = cm.params
+this_params['RnosiRNA'].set(value=1000)
+this_params['flip'].set(value=2000)
+this_params['pC8'].set(value=10000)
+this_params['Bid'].set(value=60000)
+this_params['Bax'].set(value=80000)
+this_params['Bcl2'].set(value=30000)
+sim_res = sim_and_save(name, this_params)
+
+name = 'earm13.pandas'
+this_params['L_kd'].set(value=1E-6)
+this_params['L_kc'].set(value=1E-2)
+this_params['DISC_ku'].set(value=1E-7)
+this_params['C3_ku'].set(value=1E-7)
+this_params['C6_ku'].set(value=1E-7)
+this_params['PARP_kd'].set(value=0.001)
+this_params['PARP_kc'].set(value=20)
+this_params['transloc'].set(value=1)
+this_params['v'].set(value=0.01)
+sim_res = sim_and_save(name, this_params)
