@@ -156,6 +156,7 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         if pp is not None:
             for fluo in fluorophores:
                 plt.plot(sim.t.values[0], sim[fluo+'_r_from_i'].values[0], 'x'+Colors[fluo])
+                plt.plot(earm_sim.t.values[0], earm_sim[fluo + '_r_from_i'].values[0], '--' + Colors[fluo])
             pp.savefig()
             plt.close()
 

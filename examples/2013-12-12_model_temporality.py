@@ -71,7 +71,7 @@ def sim_and_save(name, other_params):
         plt.close()
 
         mask = [all([df[fluo+'_good_der'][i] for fluo in fluorophores]) for i in df.index]
-        ts.plot_scatter_times(df.TFP_to_YFP.values[:], df.TFP_to_mKate.values[:], zoom=False)
+        ts.plot_scatter_times(df.TFP_to_YFP.values[mask], df.TFP_to_mKate.values[mask], zoom=False)
         ts.plot_scatter_times(param_df.TFP_to_YFP.values, param_df.TFP_to_mKate.values, marker='x', color='k', zoom=False)
         pp.savefig()
         plt.close()
