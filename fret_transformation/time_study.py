@@ -134,6 +134,10 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         calculated using the Differences_tags list.
     """
     t = np.arange(0, 72000, 600)
+    earm_params = cm.params.copy()
+    for casp in ['S3', 'S8', 'S9']:
+        earm_params[casp].set(value=params[casp].value)
+
     earm_sim = cm.simulate(t, cm.params)
     sim = cm.simulate(t, params)
 
