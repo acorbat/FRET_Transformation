@@ -8,6 +8,7 @@ import itertools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import lmfit as lm
 
 from pyDOE import lhs
 from scipy.interpolate import splrep, splev
@@ -133,12 +134,15 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
         dictionary containing the time difference between fluorophores
         calculated using the Differences_tags list.
     """
+    fluo_to_cas = {'YFP': 'SC9',
+                   'mKate': 'SC8',
+                   'TFP': 'SC3'}
     t = np.arange(0, 72000, 600)
     earm_params = cm.params.copy()
     for casp in ['S3', 'S8', 'S9']:
         earm_params[casp].set(value=params[casp].value)
 
-    earm_sim = cm.simulate(t, cm.params)
+    earm_sim = cm.simulate(t, earm_params)
     sim = cm.simulate(t, params)
 
     earm_sim = sim_to_ani(earm_sim)
@@ -177,8 +181,26 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
 
         sim = add_differences(sim, Difference_tags=Differences_tags)
         difs = {tag: sim[tag].values for tag in Differences_tags}
+
+        for fluo in fluorophores:
+            casp = sim[fluo_to_cas[fluo]].values[0]
+            casp = casp / np.max(casp)
+            popt = fit_albeck(t, casp)
+
+            casp = earm_sim[fluo_to_cas[fluo]].values[0]
+            casp = casp / np.max(casp)
+            earm_popt = fit_albeck(t, casp)
+
+            for param in ['T_d', 'T_S']:
+                difs[fluo+'_'+param] = popt.params[param].value
+                difs[fluo + '_earm_' + param] = earm_popt.params[param].value
+
     else:
         difs = {tag: np.nan for tag in Differences_tags}
+        for fluo in fluorophores:
+            for param in ['T_d', 'T_S']:
+                difs[fluo+'_'+param] = np.nan
+                difs[fluo + '_earm_' + param] = np.nan
 
     return difs
 
@@ -226,8 +248,8 @@ def add_times_from_sim(param_df, Differences_tags, pp=None, params=None):
             params[col].set(value=param_df[col][i])
         difs = timedif_from_params(params, Differences_tags, pp=pp)
 
-        for tag in Differences_tags:
-            param_df = param_df.set_value(i, tag, difs[tag])
+        for key in difs.keys():
+            param_df = param_df.set_value(i, key, difs[key])
 
     return param_df
 
@@ -429,3 +451,16 @@ def add_counts(param_df, data, dist=(5,5), cols=('TFP_to_YFP', 'TFP_to_mKate')):
     param_df['counts'] = counts
 
     return param_df
+
+
+def albeck_func(t, T_d, T_S):
+    return 1 - 1 / (1 + np.exp((t - T_d) / (4 * T_S)))
+
+
+def fit_albeck(t, data):
+    func = lm.Model(albeck_func)
+    # func.set_param_hint('f',value=1, fix=True)
+    func.set_param_hint('T_d', value=150, min=0)
+    func.set_param_hint('T_S', value=5, min=0)
+    res = func.fit(data, t=t)
+    return res
