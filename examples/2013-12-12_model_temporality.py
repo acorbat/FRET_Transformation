@@ -92,7 +92,7 @@ def sim_and_save(name, other_params):
 # xiap_ku = np.arange(2, 6.2, 1)
 # fs = np.arange(2.8, 3.7, 0.2)
 # ligands = [3, 4, 5]
-L_kcs = [2, 3, 4, 6, 7, 8]
+mults = [-2, -1, 2, 3, 4]
 
 # for this_xiap in xiap:
 #     for this_xiap_deg in xiap_deg:
@@ -160,8 +160,16 @@ L_kcs = [2, 3, 4, 6, 7, 8]
 #         this_params['RnosiRNA'].set(value=10 ** this_recep)
 #         sim_res = sim_and_save(name, this_params)
 
-for L_kc in L_kcs:
-    name = 'earm10_varLkc_%01d.pandas' % L_kc
-    this_params = cm.params.copy()
-    this_params['L_kc'].set(value=2 / (10 ** (-1* L_kc)))
-    sim_res = sim_and_save(name, this_params)
+# for L_kc in L_kcs:
+#     name = 'earm10_varLkc_%01d.pandas' % L_kc
+#     this_params = cm.params.copy()
+#     this_params['L_kc'].set(value=2 / (10 ** (-1* L_kc)))
+#     sim_res = sim_and_save(name, this_params)
+
+sens = ['C3S', 'C8S', 'C9S']
+for sen in sens:
+    for mult in mults:
+        name = 'earm10_var%s_%01d.pandas' % (sen, mult)
+        this_params = cm.params.copy()
+        this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
+        sim_res = sim_and_save(name, this_params)
