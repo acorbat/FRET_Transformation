@@ -56,7 +56,7 @@ save_dir = work_dir.joinpath('sim_params')
 
 
 def sim_and_save(name, other_params):
-    param_df = ts.generate_param_sweep(100, space_params=sweep_space)
+    param_df = ts.generate_param_sweep(1000, space_params=sweep_space)
     savename = save_dir.joinpath(name)
     pdf_path = savename.with_suffix('.pdf')
     with PdfPages(str(pdf_path)) as pp:
@@ -92,7 +92,7 @@ def sim_and_save(name, other_params):
 # xiap_ku = np.arange(2, 6.2, 1)
 # fs = np.arange(2.8, 3.7, 0.2)
 # ligands = [3, 4, 5]
-mults = [-2, -1, 2, 3, 4]
+# mults = [-2, -1, 2, 3, 4]
 
 # for this_xiap in xiap:
 #     for this_xiap_deg in xiap_deg:
@@ -166,10 +166,14 @@ mults = [-2, -1, 2, 3, 4]
 #     this_params['L_kc'].set(value=2 / (10 ** (-1* L_kc)))
 #     sim_res = sim_and_save(name, this_params)
 
-sens = ['C3S', 'C8S', 'C9S']
-for sen in sens:
-    for mult in mults:
-        name = 'earm10_var%s_%01d.pandas' % (sen, mult)
-        this_params = cm.params.copy()
-        this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
-        sim_res = sim_and_save(name, this_params)
+# sens = ['C3S', 'C8S', 'C9S']
+# for sen in sens:
+#     for mult in mults:
+#         name = 'earm10_var%s_%01d.pandas' % (sen, mult)
+#         this_params = cm.params.copy()
+#         this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
+#         sim_res = sim_and_save(name, this_params)
+
+name = 'earm10_nomodif.pandas'
+this_params = cm.params.copy()
+sim_res = sim_and_save(name, this_params)
