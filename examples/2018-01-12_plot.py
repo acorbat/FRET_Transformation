@@ -108,4 +108,119 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
 
 
 fluorophores = ['YFP', 'mKate', 'TFP']
+
+sim_data = load_sim('earm10_varligand_4_varrecep_3_varxiap_2')
+mask = [True if np.isfinite(sim_data.TFP_to_YFP[i]) and np.isfinite(sim_data.TFP_to_mKate[i]) else False for i in sim_data.index]
+sim_times = np.asarray((sim_data.TFP_to_YFP.values[mask], sim_data.TFP_to_mKate.values[mask]))
+sim_times += np.random.normal(0, 2, sim_times.shape)
+
 exp_data = load_data()
+exp_data = exp_data.query('Content == "TNF alpha"')
+mask = [all([exp_data[fluo+'_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
+
+exp_hist, xedges, yedges = np.histogram2d(exp_times[0], exp_times[1], range=[[-30, 35], [-30, 35]], bins=np.arange(-30, 36, 5))
+sim_hist, xedges, yedges = np.histogram2d(sim_times[0], sim_times[1], range=[[-30, 35], [-30, 35]], bins=np.arange(-30, 36, 5))
+
+
+def intersec_hist(hist_1, hist_2):
+    assert hist_1.shape == hist_2.shape
+
+    if len(hist_1.shape) > 1:
+        hist_1 = hist_1.flatten()
+    if len(hist_2.shape) > 1:
+        hist_2 = hist_2.flatten()
+
+    min_hist = np.min([hist_1, hist_2], axis=0)
+
+    return np.sum(min_hist) / np.sum(hist_2)
+
+
+def corr_hist(hist_1, hist_2):
+    assert hist_1.shape == hist_2.shape
+
+    return np.corrcoef(hist_1.flatten(), hist_2.flatten())[0, 1]
+
+
+def test_hist_comp(function):
+    # generate 2D normal distributions
+    dist_original = np.random.multivariate_normal([0,0], [[1, 0], [0, 1]], size=300)
+    dist_origin2 = np.random.multivariate_normal([0,0], [[1, 0], [0, 1]], size=300)
+    dist_corr_x1 = np.random.multivariate_normal([0, 0.5], [[1, 0], [0, 1]], size=300)
+    dist_corr_x2 = np.random.multivariate_normal([0, 2], [[1, 0], [0, 1]], size=300)
+    dist_corr_y1 = np.random.multivariate_normal([0, 0.5], [[1, 0], [0, 1]], size=300)
+    dist_corr_y2 = np.random.multivariate_normal([0, 2], [[1, 0], [0, 1]], size=300)
+    dist_ellipse = np.random.multivariate_normal([0, 0], [[1, 0.8], [0.8, 1]], size=300)
+
+    dists = {'original': dist_original,
+             'original_2' : dist_origin2,
+             'corr_x1': dist_corr_x1,
+             'corr_x2': dist_corr_x2,
+             'corr_y1': dist_corr_y1,
+             'corr_y2': dist_corr_y2,
+             'ellipse': dist_ellipse}
+
+    hists = dict()
+    for key, dist in dists.items():
+        hist, xedges, yedges = np.histogram2d(dist[:, 0], dist[:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 0.5))
+        hists[key] = hist
+
+    fig, axs = plt.subplots(3, 3, figsize=(10, 10))
+    fig.subplots_adjust(hspace=1, wspace=1)
+    axs = axs.ravel()
+
+    for i, (key, hist) in enumerate(hists.items()):
+        val = function(hists['original'], hist)
+        axs[i].scatter(dists['original'][:, 0], dists['original'][:, 1], color='b', alpha=0.5)
+        axs[i].scatter(dists[key][:, 0], dists[key][:, 1], color='r', alpha=0.5)
+        axs[i].set_title(key + ' = ' + str(val))
+
+    hist, xedges, yedges = np.histogram2d(dists['original'][:, 0], dists['original'][:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 1))
+    hists['bin_1_orig'] = hist
+
+    hist, xedges, yedges = np.histogram2d(dists['original_2'][:, 0], dists['original_2'][:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 1))
+    hists['bin_1_var'] = hist
+
+    hist, xedges, yedges = np.histogram2d(dists['original'][:, 0], dists['original'][:, 1], range=[[-5, 5], [-5, 5]],
+                                          bins=np.arange(-5, 5, 2))
+    hists['bin_2_orig'] = hist
+
+    hist, xedges, yedges = np.histogram2d(dists['original_2'][:, 0], dists['original_2'][:, 1],
+                                          range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 2))
+    hists['bin_2_var'] = hist
+
+    val = function(hists['bin_1_orig'], hists['bin_1_var'])
+    axs[7].scatter(dists['original'][:, 0], dists['original'][:, 1], color='b', alpha=0.5)
+    axs[7].scatter(dists['original_2'][:, 0], dists['original_2'][:, 1], color='r', alpha=0.5)
+    axs[7].set_title('bin_1' + ' = ' + str(val))
+
+    val = function(hists['bin_2_orig'], hists['bin_2_var'])
+    axs[8].scatter(dists['original'][:, 0], dists['original'][:, 1], color='b', alpha=0.5)
+    axs[8].scatter(dists['original_2'][:, 0], dists['original_2'][:, 1], color='r', alpha=0.5)
+    axs[8].set_title('bin_2' + ' = ' + str(val))
+
+    plt.show()
+
+
+def test_binning(function, dist_type='same'):
+    dist_orig = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
+    if dist_type == 'same':
+        dist_comp = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
+    elif dist_type == 'ellipse':
+        dist_comp = np.random.multivariate_normal([0, 0], [[1, 0.8], [0.8, 1]], size=300)
+
+    binnings = [0.5 , 1, 2, 3, 4]
+
+    vals = []
+    for binning in binnings:
+        hist_orig, xedges, yedges = np.histogram2d(dist_orig[:, 0], dist_orig[:, 1], range=[[-5, 5], [-5, 5]],
+                                                   bins=np.arange(-5, 5, binning))
+
+        hist_comp, xedges, yedges = np.histogram2d(dist_comp[:, 0], dist_comp[:, 1], range=[[-5, 5], [-5, 5]],
+                                                   bins=np.arange(-5, 5, binning))
+
+        val = function(hist_orig, hist_comp)
+        vals.append(val)
+
+    plt.plot(binnings, vals)
+    plt.show()
