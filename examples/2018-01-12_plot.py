@@ -109,18 +109,18 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
 
 fluorophores = ['YFP', 'mKate', 'TFP']
 
-sim_data = load_sim('earm10_varligand_4_varrecep_3_varxiap_2')
-mask = [True if np.isfinite(sim_data.TFP_to_YFP[i]) and np.isfinite(sim_data.TFP_to_mKate[i]) else False for i in sim_data.index]
-sim_times = np.asarray((sim_data.TFP_to_YFP.values[mask], sim_data.TFP_to_mKate.values[mask]))
-sim_times += np.random.normal(0, 2, sim_times.shape)
+def load_sim_and_data(filename='earm10_varligand_4_varrecep_3_varxiap_2'):
+    sim_data = load_sim(filename)
+    mask = [True if np.isfinite(sim_data.TFP_to_YFP[i]) and np.isfinite(sim_data.TFP_to_mKate[i]) else False for i in sim_data.index]
+    sim_times = np.asarray((sim_data.TFP_to_YFP.values[mask], sim_data.TFP_to_mKate.values[mask]))
+    sim_times += np.random.normal(0, 2, sim_times.shape)
 
-exp_data = load_data()
-exp_data = exp_data.query('Content == "TNF alpha"')
-mask = [all([exp_data[fluo+'_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
-exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
+    exp_data = load_data()
+    exp_data = exp_data.query('Content == "TNF alpha"')
+    mask = [all([exp_data[fluo+'_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
 
-exp_hist, xedges, yedges = np.histogram2d(exp_times[0], exp_times[1], range=[[-30, 35], [-30, 35]], bins=np.arange(-30, 36, 5))
-sim_hist, xedges, yedges = np.histogram2d(sim_times[0], sim_times[1], range=[[-30, 35], [-30, 35]], bins=np.arange(-30, 36, 5))
+    return np.asarray(sim_times).T, np.asarray(exp_times).T
 
 
 def intersec_hist(hist_1, hist_2):
@@ -139,7 +139,16 @@ def intersec_hist(hist_1, hist_2):
 def corr_hist(hist_1, hist_2):
     assert hist_1.shape == hist_2.shape
 
-    return np.corrcoef(hist_1.flatten(), hist_2.flatten())[0, 1]
+    # Filter out empty bins of both distributions
+    hist_1_f = hist_1.flatten()
+    hist_2_f = hist_2.flatten()
+    mask = [True if x != 0 or y != 0
+                 else False
+                 for x, y in zip(hist_1_f, hist_2_f)]
+    hist_1_f = hist_1_f[mask]
+    hist_2_f = hist_2_f[mask]
+
+    return np.corrcoef(hist_1_f, hist_2_f)[0, 1]
 
 
 def test_hist_comp(function):
@@ -203,24 +212,171 @@ def test_hist_comp(function):
 
 
 def test_binning(function, dist_type='same'):
+    lim = 5
+    binnings = [0.5, 1, 2, 3]
     dist_orig = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
     if dist_type == 'same':
         dist_comp = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
     elif dist_type == 'ellipse':
         dist_comp = np.random.multivariate_normal([0, 0], [[1, 0.8], [0.8, 1]], size=300)
+    elif dist_type == 'data':
+        dist_orig, dist_comp = load_sim_and_data()
+        lim = 35
+        binnings = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    binnings = [0.5 , 1, 2, 3, 4]
+
 
     vals = []
     for binning in binnings:
-        hist_orig, xedges, yedges = np.histogram2d(dist_orig[:, 0], dist_orig[:, 1], range=[[-5, 5], [-5, 5]],
-                                                   bins=np.arange(-5, 5, binning))
+        hist_orig, xedges, yedges = np.histogram2d(dist_orig[:, 0], dist_orig[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
 
-        hist_comp, xedges, yedges = np.histogram2d(dist_comp[:, 0], dist_comp[:, 1], range=[[-5, 5], [-5, 5]],
-                                                   bins=np.arange(-5, 5, binning))
+        hist_comp, xedges, yedges = np.histogram2d(dist_comp[:, 0], dist_comp[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
 
         val = function(hist_orig, hist_comp)
         vals.append(val)
 
-    plt.plot(binnings, vals)
+    fig, axs = plt.subplots(1, 2, figsize=(10,6))
+    fig.subplots_adjust(hspace=1, wspace=1)
+    axs = axs.ravel()
+
+    axs[0].scatter(dist_orig[:, 0], dist_orig[:, 1], color='b', alpha=0.5)
+    axs[0].scatter(dist_comp[:, 0], dist_comp[:, 1], color='r', alpha=0.5)
+    axs[1].plot(binnings, vals)
     plt.show()
+
+
+def test_func_dists(function, dist_1, dist_2, title='Comparison'):
+    binnings = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    lim = 130
+
+    vals = []
+    for binning in binnings:
+        hist_orig, xedges, yedges = np.histogram2d(dist_1[:, 0], dist_1[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
+
+        hist_comp, xedges, yedges = np.histogram2d(dist_2[:, 0], dist_2[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
+
+        val = function(hist_orig, hist_comp)
+        vals.append(val)
+
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+    fig.subplots_adjust(hspace=1, wspace=1)
+    axs = axs.ravel()
+
+    axs[0].scatter(dist_1[:, 0], dist_1[:, 1], color='b', alpha=0.5)
+    axs[0].scatter(dist_2[:, 0], dist_2[:, 1], color='r', alpha=0.5)
+    axs[0].set_xlabel('x')
+    axs[0].set_ylabel('y')
+
+    axs[1].plot(binnings, vals)
+    axs[1].set_xlabel('binning')
+    axs[1].set_ylabel('value')
+    plt.suptitle(title)
+
+# Definitions for 2D cumulative distribution functions
+
+
+def cdf_2d(dist, x, y, x_min=-np.inf, y_min=-np.inf):
+    vals = [1 if this_x >= x_min and this_x < x
+             and this_y >= y_min and this_y < y
+            else 0
+            for this_x, this_y in dist]
+
+    return np.sum(vals)
+
+
+def dist_cdf_mat(dist, range):
+    xs = np.linspace(range[0][0], range[0][1], 50)
+    ys = np.linspace(range[1][0], range[1][1], 50)
+
+    Xs, Ys = np.meshgrid(xs, ys)
+    Zs = []
+    for X in xs:
+        line_Z = []
+        for Y in ys:
+            Z = cdf_2d(dist, X, Y, x_min=range[0][0], y_min=range[1][0])
+            line_Z.append(Z)
+        Zs.append(line_Z)
+
+    return Xs, Ys, Zs
+
+
+def plot_cdf(dist, range):
+    Xs, Ys, Zs = dist_cdf_mat(dist, range)
+
+    fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+
+    ax.plot_surface(Xs, Ys, Zs)
+    plt.show()
+
+
+## import files and test correlation
+
+files = ['earm10_varligand_4_varrecep_3_varxiap_2',
+         'earm10_prop4_220',
+         'earm10_prop4_230',
+         'earm10_prop4_240',]
+
+from matplotlib.backends.backend_pdf import PdfPages
+sim_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
+work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
+
+pdf_dir = work_dir.joinpath('corr_hist.pdf')
+pp = PdfPages(str(pdf_dir))
+for file in sim_dir.glob('*.pandas'):
+    file = file.stem
+    sim_times, exp_times = load_sim_and_data(file)
+    test_func_dists(corr_hist, sim_times, exp_times, title=file)
+    pp.savefig()
+    plt.close()
+pp.close()
+
+
+def compare_sim(function, dist_1, dist_2):
+    binnings = [4, 5, 6]
+    lim = 130
+
+    vals = []
+    for binning in binnings:
+        hist_orig, xedges, yedges = np.histogram2d(dist_1[:, 0], dist_1[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
+
+        hist_comp, xedges, yedges = np.histogram2d(dist_2[:, 0], dist_2[:, 1], range=[[-lim, lim], [-lim, lim]],
+                                                   bins=np.arange(-lim, lim, binning))
+
+        val = function(hist_orig, hist_comp)
+        vals.append(val)
+
+    return vals[1], vals[0], vals[2]
+
+
+def compare_all_sims(function):
+    sim_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
+    work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
+    pdf_dir = work_dir.joinpath('comparison.pdf')
+    pp = PdfPages(str(pdf_dir))
+
+    files = []
+    vals = []
+    min_errs = []
+    max_errs = []
+    for file in sim_dir.glob('*.pandas'):
+        file = file.stem
+        sim_times, exp_times = load_sim_and_data(file)
+        val, min_err, max_err = compare_sim(corr_hist, sim_times, exp_times)
+        files.append(file)
+        vals.append(val)
+        min_errs.append(min_err)
+        max_errs.append(max_err)
+
+    plt.figure(figsize=(28,14))
+    plt.errorbar(np.arange(len(vals)), vals, yerr=[min_errs, max_errs], marker='o', color='b', ecolor='r', ls='none', elinewidth=3)
+    plt.xticks(np.arange(len(files)), files, rotation='vertical')
+    plt.grid()
+    pp.savefig()
+    plt.show()
+    pp.close()
