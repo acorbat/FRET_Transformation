@@ -410,3 +410,5 @@ def plot_comparison_from_df(df):
     plt.tight_layout()
     plt.show()
 
+plt.scatter(sim_times[:, 0], sim_times[:, 1], color='b', alpha=0.5)
+plt.scatter(exp_times[:, 0], exp_times[:, 1], color='r', alpha=0.5)
