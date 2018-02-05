@@ -6,6 +6,7 @@ import seaborn as sns
 
 from scipy.ndimage import zoom
 from matplotlib.mlab import griddata
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
@@ -316,24 +317,24 @@ def plot_cdf(dist, range):
 
 ## import files and test correlation
 
-files = ['earm10_varligand_4_varrecep_3_varxiap_2',
-         'earm10_prop4_220',
-         'earm10_prop4_230',
-         'earm10_prop4_240',]
+# files = ['earm10_varligand_4_varrecep_3_varxiap_2',
+#          'earm10_prop4_220',
+#          'earm10_prop4_230',
+#          'earm10_prop4_240',]
 
-from matplotlib.backends.backend_pdf import PdfPages
-sim_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
-work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
 
-pdf_dir = work_dir.joinpath('corr_hist.pdf')
-pp = PdfPages(str(pdf_dir))
-for file in sim_dir.glob('*.pandas'):
-    file = file.stem
-    sim_times, exp_times = load_sim_and_data(file)
-    test_func_dists(corr_hist, sim_times, exp_times, title=file)
-    pp.savefig()
-    plt.close()
-pp.close()
+# sim_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
+# work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
+#
+# pdf_dir = work_dir.joinpath('corr_hist.pdf')
+# pp = PdfPages(str(pdf_dir))
+# for file in sim_dir.glob('*.pandas'):
+#     file = file.stem
+#     sim_times, exp_times = load_sim_and_data(file)
+#     test_func_dists(corr_hist, sim_times, exp_times, title=file)
+#     pp.savefig()
+#     plt.close()
+# pp.close()
 
 
 def compare_sim(function, dist_1, dist_2):
@@ -370,13 +371,34 @@ def compare_all_sims(function):
         val, min_err, max_err = compare_sim(corr_hist, sim_times, exp_times)
         files.append(file)
         vals.append(val)
-        min_errs.append(min_err)
-        max_errs.append(max_err)
+        min_errs.append(val-min_err)
+        max_errs.append(max_err-val)
 
-    plt.figure(figsize=(28,14))
-    plt.errorbar(np.arange(len(vals)), vals, yerr=[min_errs, max_errs], marker='o', color='b', ecolor='r', ls='none', elinewidth=3)
-    plt.xticks(np.arange(len(files)), files, rotation='vertical')
+    # plt.figure(figsize=(28,14))
+    # plt.errorbar(np.arange(len(vals)), vals, yerr=[min_errs, max_errs], marker='o', color='b', ecolor='r', ls='none', elinewidth=3)
+    # plt.xticks(np.arange(len(files)), files, rotation='vertical')
+    # plt.grid()
+    # pp.savefig()
+    # plt.show()
+    # pp.close()
+
+    df = pd.DataFrame([files, vals, min_errs, max_errs])
+    df = df.transpose()
+    df.columns = ['file', 'val', 'min', 'max']
+    json_dir = work_dir.joinpath('comparison.json')
+    csv_dir = work_dir.joinpath('comparison.csv')
+    df.to_json(str(json_dir), orient='index')
+    df.to_csv(str(csv_dir))
+
+    plot_comparison_from_df(df)
+
+
+def plot_comparison_from_df(df):
+    plt.figure(figsize=(14, 30))
+    plt.errorbar(df.val.values, np.arange(len(df.val.values)), xerr=[df['min'].values, df['max'].values], marker='o', color='b', ecolor='r', ls='none',
+                 elinewidth=3)
+    plt.yticks(np.arange(len(df.file.values)), df.file.values)
     plt.grid()
-    pp.savefig()
+    plt.tight_layout()
     plt.show()
-    pp.close()
+
