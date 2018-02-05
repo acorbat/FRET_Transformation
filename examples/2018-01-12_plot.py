@@ -358,33 +358,35 @@ def compare_sim(function, dist_1, dist_2):
 def compare_all_sims(function):
     sim_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
-    pdf_dir = work_dir.joinpath('comparison.pdf')
-    pp = PdfPages(str(pdf_dir))
 
     files = []
-    vals = []
-    min_errs = []
-    max_errs = []
+    all_bin_5 = []
+    all_bin_4 = []
+    all_bin_6 = []
     for file in sim_dir.glob('*.pandas'):
         file = file.stem
-        sim_times, exp_times = load_sim_and_data(file)
-        val, min_err, max_err = compare_sim(corr_hist, sim_times, exp_times)
+
+        bins_4 = []
+        bins_5 = []
+        bins_6 = []
+        for _ in range(5):
+            sim_times, exp_times = load_sim_and_data(file)
+            bin_5, bin_4, bin_6 = compare_sim(function, sim_times, exp_times)
+            bins_4.append(bin_4)
+            bins_5.append(bin_5)
+            bins_6.append(bin_6)
         files.append(file)
-        vals.append(val)
-        min_errs.append(val-min_err)
-        max_errs.append(max_err-val)
+        all_bin_4.append(bins_4)
+        all_bin_5.append(bins_5)
+        all_bin_6.append(bins_6)
 
-    # plt.figure(figsize=(28,14))
-    # plt.errorbar(np.arange(len(vals)), vals, yerr=[min_errs, max_errs], marker='o', color='b', ecolor='r', ls='none', elinewidth=3)
-    # plt.xticks(np.arange(len(files)), files, rotation='vertical')
-    # plt.grid()
-    # pp.savefig()
-    # plt.show()
-    # pp.close()
-
-    df = pd.DataFrame([files, vals, min_errs, max_errs])
+    df = pd.DataFrame([files, all_bin_4, all_bin_5, all_bin_6])
     df = df.transpose()
-    df.columns = ['file', 'val', 'min', 'max']
+    df.columns = ['file', 'bins_4', 'bins_5', 'bins_6']
+
+    for i in [4, 5, 6]:
+        df['bin_'+str(i)+'_mean'] = [np.mean(bins) for bins in df['bins_'+str(i)].values]
+        df['bin_'+str(i)+'_std'] = [np.std(bins) for bins in df['bins_' + str(i)].values]
     json_dir = work_dir.joinpath('comparison.json')
     csv_dir = work_dir.joinpath('comparison.csv')
     df.to_json(str(json_dir), orient='index')
@@ -392,11 +394,17 @@ def compare_all_sims(function):
 
     plot_comparison_from_df(df)
 
+    return df
+
 
 def plot_comparison_from_df(df):
+    df = df.sort_values(by='bin_5_mean', ascending=False)
     plt.figure(figsize=(14, 30))
-    plt.errorbar(df.val.values, np.arange(len(df.val.values)), xerr=[df['min'].values, df['max'].values], marker='o', color='b', ecolor='r', ls='none',
-                 elinewidth=3)
+    color_dict = {'4':'g', '5':'r', '6':'b'}
+    for i, this_c in color_dict.items():
+        plt.errorbar(df['bin_'+str(i)+'_mean'].values, np.arange(len(df['bin_'+str(i)+'_mean'].values)),
+                     xerr=df['bin_'+str(i)+'_std'].values, marker='o', color=this_c, ecolor=this_c, ls='none',
+                     elinewidth=3)
     plt.yticks(np.arange(len(df.file.values)), df.file.values)
     plt.grid()
     plt.tight_layout()
