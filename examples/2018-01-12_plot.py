@@ -1,6 +1,7 @@
 import pathlib
 import pandas as pd
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -14,14 +15,14 @@ from fret_transformation import transformation as tf
 def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     """Loads filename data from 2017-09-04_Images folder."""
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
-    data_dir = work_dir.joinpath(filename+'.pandas')
+    data_dir = work_dir.joinpath(filename + '.pandas')
     return pd.read_pickle(str(data_dir))
 
 
 def load_sim(filename='earm10_000'):
     """Loads filename data from sim_params folder"""
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/sim_params')
-    data_dir = work_dir.joinpath(filename+'.pandas')
+    data_dir = work_dir.joinpath(filename + '.pandas')
     return pd.read_pickle(str(data_dir))
 
 
@@ -44,8 +45,8 @@ def mass_histogram(data, interp=False):
                 centers_x.append(this_mean[0])
                 centers_y.append(this_mean[1])
             else:
-                centers_x.append((xend+xini)/2)
-                centers_y.append((yend+yini)/2)
+                centers_x.append((xend + xini) / 2)
+                centers_y.append((yend + yini) / 2)
 
     if interp:
         xcen = (xedges[:-1] + xedges[1:]) / 2
@@ -63,20 +64,23 @@ def mass_histogram(data, interp=False):
 def plot_2dhist(times, data=False):
     """Uses gaussian kernel to generate a 2D plot of data distribution."""
     times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
-    sns.kdeplot(times[0], times[1], cmap="Blues", shade=True, shade_lowest=False, clip=((-30, 35), (-30, 35)), n_levels=4)
+    sns.kdeplot(times[0], times[1], cmap="Blues", shade=True, shade_lowest=False, clip=((-30, 35), (-30, 35)),
+                n_levels=4)
 
 
 def plot_data(times):
     """Uses mass_histogram to generate a contour plot of the 2D histogram of data."""
     times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
-    hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]], bins=np.arange(-30, 36, 5))  # mass_histogram(times, interp=True)
+    hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]],
+                                                bins=np.arange(-30, 36, 5))  # mass_histogram(times, interp=True)
     # centers_x = (centers_x[:-1] + centers_x[1:])/2
     # centers_y = (centers_y[:-1] + centers_y[1:])/2
 
     hist = zoom(hist, 4, order=3)
     max_count = np.max(hist)
-    hist = hist/max_count
-    plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]), levels=[0.15, 0.5, 0.8], cmap='viridis')
+    hist = hist / max_count
+    plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]), levels=[0.15, 0.5, 0.8],
+                cmap='viridis')
 
 
 def plot_show():
@@ -97,7 +101,7 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
     fluorophores = ['YFP', 'mKate', 'TFP']
     exp_data = load_data()
     exp_data = exp_data.query('Content == "TNF alpha"')
-    mask = [all([exp_data[fluo+'_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
     exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
     sim_data = load_sim(sim_name)
     sim_times = np.asarray((sim_data.TFP_to_YFP.values, sim_data.TFP_to_mKate.values))
@@ -112,15 +116,17 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
 
 fluorophores = ['YFP', 'mKate', 'TFP']
 
+
 def load_sim_and_data(filename='earm10_varligand_4_varrecep_3_varxiap_2'):
     sim_data = load_sim(filename)
-    mask = [True if np.isfinite(sim_data.TFP_to_YFP[i]) and np.isfinite(sim_data.TFP_to_mKate[i]) else False for i in sim_data.index]
+    mask = [True if np.isfinite(sim_data.TFP_to_YFP[i]) and np.isfinite(sim_data.TFP_to_mKate[i]) else False for i in
+            sim_data.index]
     sim_times = np.asarray((sim_data.TFP_to_YFP.values[mask], sim_data.TFP_to_mKate.values[mask]))
     sim_times += np.random.normal(0, 2, sim_times.shape)
 
     exp_data = load_data()
     exp_data = exp_data.query('Content == "TNF alpha"')
-    mask = [all([exp_data[fluo+'_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
     exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
 
     return np.asarray(sim_times).T, np.asarray(exp_times).T
@@ -146,8 +152,8 @@ def corr_hist(hist_1, hist_2):
     hist_1_f = hist_1.flatten()
     hist_2_f = hist_2.flatten()
     mask = [True if x != 0 or y != 0
-                 else False
-                 for x, y in zip(hist_1_f, hist_2_f)]
+            else False
+            for x, y in zip(hist_1_f, hist_2_f)]
     hist_1_f = hist_1_f[mask]
     hist_2_f = hist_2_f[mask]
 
@@ -156,8 +162,8 @@ def corr_hist(hist_1, hist_2):
 
 def test_hist_comp(function):
     # generate 2D normal distributions
-    dist_original = np.random.multivariate_normal([0,0], [[1, 0], [0, 1]], size=300)
-    dist_origin2 = np.random.multivariate_normal([0,0], [[1, 0], [0, 1]], size=300)
+    dist_original = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
+    dist_origin2 = np.random.multivariate_normal([0, 0], [[1, 0], [0, 1]], size=300)
     dist_corr_x1 = np.random.multivariate_normal([0, 0.5], [[1, 0], [0, 1]], size=300)
     dist_corr_x2 = np.random.multivariate_normal([0, 2], [[1, 0], [0, 1]], size=300)
     dist_corr_y1 = np.random.multivariate_normal([0, 0.5], [[1, 0], [0, 1]], size=300)
@@ -165,7 +171,7 @@ def test_hist_comp(function):
     dist_ellipse = np.random.multivariate_normal([0, 0], [[1, 0.8], [0.8, 1]], size=300)
 
     dists = {'original': dist_original,
-             'original_2' : dist_origin2,
+             'original_2': dist_origin2,
              'corr_x1': dist_corr_x1,
              'corr_x2': dist_corr_x2,
              'corr_y1': dist_corr_y1,
@@ -174,7 +180,8 @@ def test_hist_comp(function):
 
     hists = dict()
     for key, dist in dists.items():
-        hist, xedges, yedges = np.histogram2d(dist[:, 0], dist[:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 0.5))
+        hist, xedges, yedges = np.histogram2d(dist[:, 0], dist[:, 1], range=[[-5, 5], [-5, 5]],
+                                              bins=np.arange(-5, 5, 0.5))
         hists[key] = hist
 
     fig, axs = plt.subplots(3, 3, figsize=(10, 10))
@@ -187,10 +194,12 @@ def test_hist_comp(function):
         axs[i].scatter(dists[key][:, 0], dists[key][:, 1], color='r', alpha=0.5)
         axs[i].set_title(key + ' = ' + str(val))
 
-    hist, xedges, yedges = np.histogram2d(dists['original'][:, 0], dists['original'][:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 1))
+    hist, xedges, yedges = np.histogram2d(dists['original'][:, 0], dists['original'][:, 1], range=[[-5, 5], [-5, 5]],
+                                          bins=np.arange(-5, 5, 1))
     hists['bin_1_orig'] = hist
 
-    hist, xedges, yedges = np.histogram2d(dists['original_2'][:, 0], dists['original_2'][:, 1], range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 1))
+    hist, xedges, yedges = np.histogram2d(dists['original_2'][:, 0], dists['original_2'][:, 1],
+                                          range=[[-5, 5], [-5, 5]], bins=np.arange(-5, 5, 1))
     hists['bin_1_var'] = hist
 
     hist, xedges, yedges = np.histogram2d(dists['original'][:, 0], dists['original'][:, 1], range=[[-5, 5], [-5, 5]],
@@ -227,8 +236,6 @@ def test_binning(function, dist_type='same'):
         lim = 35
         binnings = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-
-
     vals = []
     for binning in binnings:
         hist_orig, xedges, yedges = np.histogram2d(dist_orig[:, 0], dist_orig[:, 1], range=[[-lim, lim], [-lim, lim]],
@@ -240,7 +247,7 @@ def test_binning(function, dist_type='same'):
         val = function(hist_orig, hist_comp)
         vals.append(val)
 
-    fig, axs = plt.subplots(1, 2, figsize=(10,6))
+    fig, axs = plt.subplots(1, 2, figsize=(10, 6))
     fig.subplots_adjust(hspace=1, wspace=1)
     axs = axs.ravel()
 
@@ -279,12 +286,13 @@ def test_func_dists(function, dist_1, dist_2, title='Comparison'):
     axs[1].set_ylabel('value')
     plt.suptitle(title)
 
+
 # Definitions for 2D cumulative distribution functions
 
 
 def cdf_2d(dist, x, y, x_min=-np.inf, y_min=-np.inf):
     vals = [1 if this_x >= x_min and this_x < x
-             and this_y >= y_min and this_y < y
+                 and this_y >= y_min and this_y < y
             else 0
             for this_x, this_y in dist]
 
@@ -387,8 +395,8 @@ def compare_all_sims(function):
     df.columns = ['file', 'bins_4', 'bins_5', 'bins_6']
 
     for i in [4, 5, 6]:
-        df['bin_'+str(i)+'_mean'] = [np.mean(bins) for bins in df['bins_'+str(i)].values]
-        df['bin_'+str(i)+'_std'] = [np.std(bins) for bins in df['bins_' + str(i)].values]
+        df['bin_' + str(i) + '_mean'] = [np.mean(bins) for bins in df['bins_' + str(i)].values]
+        df['bin_' + str(i) + '_std'] = [np.std(bins) for bins in df['bins_' + str(i)].values]
     json_dir = work_dir.joinpath('comparison.json')
     csv_dir = work_dir.joinpath('comparison.csv')
     df.to_json(str(json_dir), orient='index')
@@ -402,10 +410,10 @@ def compare_all_sims(function):
 def plot_comparison_from_df(df):
     df = df.sort_values(by='bin_5_mean', ascending=False)
     plt.figure(figsize=(14, 30))
-    color_dict = {'4':'g', '5':'r', '6':'b'}
+    color_dict = {'4': 'g', '5': 'r', '6': 'b'}
     for i, this_c in color_dict.items():
-        plt.errorbar(df['bin_'+str(i)+'_mean'].values, np.arange(len(df['bin_'+str(i)+'_mean'].values)),
-                     xerr=df['bin_'+str(i)+'_std'].values, marker='o', color=this_c, ecolor=this_c, ls='none',
+        plt.errorbar(df['bin_' + str(i) + '_mean'].values, np.arange(len(df['bin_' + str(i) + '_mean'].values)),
+                     xerr=df['bin_' + str(i) + '_std'].values, marker='o', color=this_c, ecolor=this_c, ls='none',
                      elinewidth=3)
     plt.yticks(np.arange(len(df.file.values)), df.file.values)
     plt.grid()
@@ -449,10 +457,10 @@ def estimate_pre_and_post():
         df[fluo + '_pos_std'] = pos_stds
 
 
-def anisos_curves_pdf():
-    Colors = {'YFP' : 'y',
-              'mKate' : 'r',
-              'TFP' : 'g'}
+def anisos_pdf(df):
+    Colors = {'YFP': 'y',
+              'mKate': 'r',
+              'TFP': 'g'}
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images')
     pdf_dir = work_dir.joinpath('pre_and_post_aniso.pdf')
     pp = PdfPages(str(pdf_dir))
@@ -462,7 +470,7 @@ def anisos_curves_pdf():
             if df[fluo + '_good_der'][i]:
                 fig_created = True
                 plt.plot(df[fluo + '_r_from_i'][i], Colors[fluo])
-                plt.plot([0, 90], [df[fluo + '_pre_mean'][i]]*2, Colors[fluo] + '--')
+                plt.plot([0, 90], [df[fluo + '_pre_mean'][i]] * 2, Colors[fluo] + '--')
                 plt.plot([0, 90], [df[fluo + '_pos_mean'][i]] * 2, Colors[fluo] + '--')
                 plt.title(str(i))
 
@@ -471,8 +479,6 @@ def anisos_curves_pdf():
             plt.close()
     pp.close()
 
-
-def pre_post_hist():
     hist_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/Figura 1/')
     for fluo in fluorophores:
         mask_pre = np.isfinite(df[fluo + '_pre_mean'].values)
@@ -490,3 +496,108 @@ def pre_post_hist():
     pp.close()
 
 
+def plot_anis_hist(vals, color='b', alpha=0.6, binsize=0.002):
+    mask_pre = np.isfinite(vals)
+    vals = vals[mask_pre]
+    first_bin = min(vals) - min(vals) % binsize
+    last_bin = max(vals) + binsize
+    plt.hist(vals,
+             bins=np.arange(first_bin, last_bin, binsize),
+             color=color,
+             alpha=alpha,
+             edgecolor='black')
+    plt.ylabel('counts')
+    plt.xlabel('Anisotropy')
+
+
+def fig_anisos_hists(df):
+    fluorophores = ['YFP', 'mKate', 'TFP']
+    Colors = {'YFP': 'y',
+              'mKate': 'r',
+              'TFP': 'g'}
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
+
+    for fluo in fluorophores:
+        hist_anis_name = img_dir.joinpath('anis_hist_' + fluo + '.png')
+        plot_anis_hist(df[fluo + '_pre_mean'].values, color=Colors[fluo])
+
+        plot_anis_hist(df[fluo + '_pos_mean'].values, color=Colors[fluo])
+        plt.savefig(str(hist_anis_name))
+        plt.close()
+
+        hist_difs_name = img_dir.joinpath('dif_hist_' + fluo + '.png')
+        difs = df[fluo + '_pos_mean'].values - df[fluo + '_pre_mean'].values
+        plot_anis_hist(difs, color=Colors[fluo], alpha=1)
+        plt.savefig(str(hist_difs_name))
+        plt.close()
+
+
+def fig_anisos_box(df):
+    fluorophores = ['YFP', 'mKate', 'TFP']
+    Colors = {'YFP': 'y',
+              'mKate': 'r',
+              'TFP': 'g'}
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
+    box_dir = img_dir.joinpath('boxaniso.png')
+
+    pres = []
+    poss = []
+    difs = []
+    for fluo in fluorophores:
+        pre = df[fluo + '_pre_mean'].values
+        mask_pre = np.isfinite(pre)
+        pre = pre[mask_pre]
+        pres.append(pre)
+
+        pos = df[fluo + '_pos_mean'].values
+        mask_pos = np.isfinite(pos)
+        pos = pos[mask_pos]
+        poss.append(pos)
+
+        dif = df[fluo + '_pos_mean'].values - df[fluo + '_pre_mean'].values
+        mask_dif = np.isfinite(dif)
+        dif = dif[mask_dif]
+        difs.append(dif)
+
+    plt.rc('xtick', labelsize=28)
+    plt.rc('ytick', labelsize=18)
+    plt.rc('axes', labelsize=24)
+
+    fig, axs = plt.subplots(2, 1, figsize=(20, 14), sharex=True)
+
+    boxprops = axs[0].boxplot(pres,
+                              notch=True,
+                              patch_artist=True)
+    for n, fluo in enumerate(fluorophores):
+        plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
+        plt.setp(boxprops['medians'][n], color='k')
+        plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
+
+    boxprops = axs[0].boxplot(poss,
+                              notch=True,
+                              patch_artist=True)
+    for n, fluo in enumerate(fluorophores):
+        plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo], ls='--')
+        plt.setp(boxprops['medians'][n], color='k')
+        plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
+    axs[0].set_ylabel('Anisotropy')
+
+    boxprops = axs[1].boxplot(difs,
+                              notch=True,
+                              patch_artist=True)
+    for n, fluo in enumerate(fluorophores):
+        plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
+        plt.setp(boxprops['medians'][n], color='k')
+        plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
+    axs[1].set_ylabel('Difference')
+
+    # font = {'family': 'normal',
+    #         'weight': 'bold',
+    #         'size': 28}
+    #
+    # matplotlib.rc('font', **font)
+
+    plt.xticks([1, 2, 3], fluorophores, rotation=-45)
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(box_dir))
