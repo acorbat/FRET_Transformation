@@ -8,6 +8,8 @@ from scipy.ndimage import zoom
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
+from fret_transformation import transformation as tf
+
 
 def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     """Loads filename data from 2017-09-04_Images folder."""
@@ -408,3 +410,83 @@ def plot_comparison_from_df(df):
     plt.yticks(np.arange(len(df.file.values)), df.file.values)
     plt.grid()
     plt.tight_layout()
+
+
+def estimate_pre_and_post():
+    df = load_data()
+    for fluo in fluorophores:
+        pres = []
+        poss = []
+        pre_means = []
+        pos_means = []
+        pre_stds = []
+        pos_stds = []
+        for i in df.index:
+            if df[fluo + '_good_der'][i]:
+                pre = tf.pre_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i])
+                pos = tf.post_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i])
+
+                pres.append(pre)
+                poss.append(pos)
+                pre_means.append(np.nanmean(pre))
+                pos_means.append(np.nanmean(pos))
+                pre_stds.append(np.nanstd(pre))
+                pos_stds.append(np.nanstd(pos))
+
+            else:
+                pres.append(np.nan)
+                poss.append(np.nan)
+                pre_means.append(np.nan)
+                pos_means.append(np.nan)
+                pre_stds.append(np.nan)
+                pos_stds.append(np.nan)
+
+        df[fluo + '_pre'] = pres
+        df[fluo + '_pos'] = poss
+        df[fluo + '_pre_mean'] = pre_means
+        df[fluo + '_pos_mean'] = pos_means
+        df[fluo + '_pre_std'] = pre_stds
+        df[fluo + '_pos_std'] = pos_stds
+
+
+def anisos_curves_pdf():
+    Colors = {'YFP' : 'y',
+              'mKate' : 'r',
+              'TFP' : 'g'}
+    work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images')
+    pdf_dir = work_dir.joinpath('pre_and_post_aniso.pdf')
+    pp = PdfPages(str(pdf_dir))
+    for i in df.index:
+        fig_created = False
+        for fluo in fluorophores:
+            if df[fluo + '_good_der'][i]:
+                fig_created = True
+                plt.plot(df[fluo + '_r_from_i'][i], Colors[fluo])
+                plt.plot([0, 90], [df[fluo + '_pre_mean'][i]]*2, Colors[fluo] + '--')
+                plt.plot([0, 90], [df[fluo + '_pos_mean'][i]] * 2, Colors[fluo] + '--')
+                plt.title(str(i))
+
+        if fig_created:
+            pp.savefig()
+            plt.close()
+    pp.close()
+
+
+def pre_post_hist():
+    hist_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/Figura 1/')
+    for fluo in fluorophores:
+        mask_pre = np.isfinite(df[fluo + '_pre_mean'].values)
+        plt.hist(df[fluo + '_pre_mean'].values[mask_pre], bins=20, color=Colors[fluo], alpha=0.6)
+        mask_pos = np.isfinite(df[fluo + '_pos_mean'].values)
+        plt.hist(df[fluo + '_pos_mean'].values[mask_pos], bins=20, color=Colors[fluo], alpha=0.6)
+        pp.savefig()
+        plt.close()
+
+        difs = df[fluo + '_pos_mean'].values - df[fluo + '_pre_mean'].values
+        mask_dif = np.isfinite(difs)
+        plt.hist(difs[mask_dif], bins=20, color=Colors[fluo], alpha=0.6)
+        pp.savefig()
+        plt.close()
+    pp.close()
+
+
