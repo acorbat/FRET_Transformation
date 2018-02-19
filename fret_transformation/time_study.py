@@ -205,15 +205,16 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
     return difs
 
 
-def sim_to_ani(df, col='r_from_i'):
+def sim_to_ani(df, col='r_from_i', fluo_to_ani=None):
     """Takes a DataFrame from simulation and add a column "col" for each
     fluorophore with the corresponding anisotropy."""
     fluo_to_cas = {'YFP': 'SC9',
                    'mKate': 'SC8',
                    'TFP': 'SC3'}
-    fluo_to_ani = {'YFP': (.22, .3),
-                   'mKate': (.23, .28),
-                   'TFP': (.28, .34)}
+    if fluo_to_ani is None:
+        fluo_to_ani = {'YFP': (.22, .3),
+                       'mKate': (.23, .28),
+                       'TFP': (.28, .34)}
 
     for fluo in fluo_to_cas.keys():
         sens_norm = [sens/np.nanmax(sens)
