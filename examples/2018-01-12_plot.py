@@ -99,23 +99,6 @@ def plot_show():
     # plt.fill_between([-35, 0], [0, 0], [-35, -35], alpha=0.5, color='y')
 
 
-def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
-    fluorophores = ['YFP', 'mKate', 'TFP']
-    exp_data = load_data()
-    exp_data = exp_data.query('Content == "TNF alpha"')
-    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
-    exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
-    sim_data = load_sim(sim_name)
-    sim_times = np.asarray((sim_data.TFP_to_YFP.values, sim_data.TFP_to_mKate.values))
-    sim_times += np.random.normal(0, 2, sim_times.shape)
-
-    plot_2dhist(sim_times)
-    plot_show()
-    plot_data(exp_times)
-    plt.scatter(exp_times[0], exp_times[1], alpha=0.1, color='r')
-    plt.show()
-
-
 fluorophores = ['YFP', 'mKate', 'TFP']
 
 
@@ -721,4 +704,26 @@ def fig_4b(df, ind):
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(sim_dir))
+    plt.close()
+
+
+def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_4/')
+    img_dir = img_dir.joinpath('hist2d_comparison_' + sim_name + '_.png')
+
+    fluorophores = ['YFP', 'mKate', 'TFP']
+    exp_data = load_data()
+    exp_data = exp_data.query('Content == "TNF alpha"')
+    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
+    sim_data = load_sim(sim_name)
+    sim_times = np.asarray((sim_data.TFP_to_YFP.values, sim_data.TFP_to_mKate.values))
+    sim_times += np.random.normal(0, 2, sim_times.shape)
+
+    plot_2dhist(sim_times)
+    plot_show()
+    plot_data(exp_times)
+    plt.scatter(exp_times[0], exp_times[1], alpha=0.1, color='r')
+    plt.tight_layout()
+    plt.savefig(str(img_dir))
     plt.close()
