@@ -603,3 +603,63 @@ def fig_anisos_box(df):
     plt.savefig(str(box_dir))
 
 
+def pdf_best_curves():
+    good_curves = [2188,
+                   2330,
+                   2355,
+                   2357,
+                   2435,
+                   2512,
+                   2514,
+                   2527,
+                   2535,
+                   2557,
+                   2584,
+                   2772,
+                   2776,
+                   2865,
+                   2930]
+
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
+    pdf_dir = img_dir.joinpath('best_curves.pdf')
+    pp = PdfPages(str(pdf_dir))
+
+    for i in good_curves:
+        fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 14))
+        for fluo in fluorophores:
+            time = np.linspace(0, 15, 90)
+            axs[0].plot(time, df[fluo + '_r_from_i'][i], color=Colors[fluo])
+            axs[0].set_ylabel('Anisotropy')
+
+            axs[1].plot(time, df[fluo + '_r_complex'][i], color=Colors[fluo])
+            axs[1].set_ylabel('Derivative')
+            axs[1].set_xlabel('Time (hr)')
+        plt.suptitle(str(i))
+        pp.savefig()
+        plt.close()
+
+    pp.close()
+
+
+def fig_2(df, fluo, ind):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
+    img_dir = img_dir.joinpath('typical_analysis.png')
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 16))
+
+    time = np.linspace(0, 15, 90)
+    axs[0].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
+    axs[0].set_ylabel('Anisotropy')
+
+    axs[1].plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
+    axs[1].set_ylabel('Derivative')
+    axs[1].set_xlabel('Time (hr)')
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(img_dir))
+    plt.close()
