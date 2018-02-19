@@ -533,10 +533,10 @@ def fig_anisos_hists(df):
 
 
 def fig_anisos_box(df):
-    fluorophores = ['YFP', 'mKate', 'TFP']
-    Colors = {'YFP': 'y',
-              'mKate': 'r',
-              'TFP': 'g'}
+    fluorophores = ['TFP', 'YFP', 'mKate']
+    Colors = {'YFP': (189/255, 214/255, 48/255),
+              'mKate': (240/255, 77/255, 35/255),
+              'TFP': (59/255, 198/255, 244/255)}
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
     box_dir = img_dir.joinpath('boxaniso.png')
 
@@ -559,9 +559,9 @@ def fig_anisos_box(df):
         dif = dif[mask_dif]
         difs.append(dif)
 
-    plt.rc('xtick', labelsize=28)
+    plt.rc('xtick', labelsize=24)
     plt.rc('ytick', labelsize=18)
-    plt.rc('axes', labelsize=24)
+    plt.rc('axes', labelsize=20)
 
     fig, axs = plt.subplots(2, 1, figsize=(20, 14), sharex=True)
 
@@ -597,7 +597,9 @@ def fig_anisos_box(df):
     #
     # matplotlib.rc('font', **font)
 
-    plt.xticks([1, 2, 3], fluorophores, rotation=-45)
+    plt.xticks([1, 2, 3], ['tagBFP/mCerulean', 'mCitrine/mCitrine', 'mCherry/mKate'])
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(box_dir))
+
+
