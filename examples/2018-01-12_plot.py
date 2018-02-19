@@ -10,6 +10,8 @@ from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
 from fret_transformation import transformation as tf
+from fret_transformation import caspase_model as cm
+from fret_transformation import time_study as ts
 
 
 def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
@@ -534,9 +536,9 @@ def fig_anisos_hists(df):
 
 def fig_anisos_box(df):
     fluorophores = ['TFP', 'YFP', 'mKate']
-    Colors = {'YFP': (189/255, 214/255, 48/255),
-              'mKate': (240/255, 77/255, 35/255),
-              'TFP': (59/255, 198/255, 244/255)}
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
     box_dir = img_dir.joinpath('boxaniso.png')
 
@@ -662,4 +664,61 @@ def fig_2(df, fluo, ind):
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(img_dir))
+    plt.close()
+
+
+def fig_4b(df, ind):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_4/')
+    dat_dir = img_dir.joinpath('max_act_times_from_data.png')
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 14))
+    for fluo in fluorophores:
+        time = np.linspace(0, 15, 90)
+        axs[0].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
+        axs[0].set_ylabel('Anisotropy')
+
+        axs[1].plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
+        axs[1].set_ylabel('Derivative')
+        axs[1].set_xlabel('Time (hr)')
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(dat_dir))
+    plt.close()
+
+    sim_dir = img_dir.joinpath('max_act_times_from_sim.png')
+
+    t = np.arange(0, 54000, 600)
+    earm_params = cm.params.copy()
+    for casp in ['S3', 'S8', 'S9']:
+        earm_params[casp].set(value=5E6)
+    earm_params['XIAP'].set(value=1E2)
+    earm_params['L50'].set(value=1E4)
+    earm_params['RnosiRNA'].set(value=1E3)
+
+    ani_vals = {'YFP': (.23, .29),
+                'mKate': (.26, .29),
+                'TFP': (.28, .32)}
+
+    model = cm.simulate(t, earm_params)
+    model = ts.sim_to_ani(model, fluo_to_ani=ani_vals)
+    model = ts.find_complex_in_sim(model)
+
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 14))
+    for fluo in fluorophores:
+        time = np.linspace(0, 15, 90)
+        axs[0].plot(time, model[fluo + '_r_from_i'][0], color=Colors[fluo])
+        axs[0].set_ylabel('Anisotropy')
+
+        axs[1].plot(time, model[fluo + '_r_complex'][0], color=Colors[fluo])
+        axs[1].set_ylabel('Derivative')
+        axs[1].set_xlabel('Time (hr)')
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(sim_dir))
     plt.close()
