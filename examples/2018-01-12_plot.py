@@ -762,3 +762,15 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
     plt.tight_layout()
     plt.savefig(str(img_dir))
     plt.close()
+
+
+def fig_sup_pairtimes():
+    work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    img_dir = work_dir.joinpath('max_act_pairplot.png')
+
+    df = load_data()
+    df = df[['TFP_max_activity', 'YFP_max_activity', 'mKate_max_activity']]
+    df = df.dropna(axis=0, how='any')
+
+    fig = sns.pairplot(df, size=5, kind='reg')
+    fig.savefig(str(img_dir))
