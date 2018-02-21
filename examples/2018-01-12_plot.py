@@ -715,15 +715,50 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
     exp_data = load_data()
     exp_data = exp_data.query('Content == "TNF alpha"')
     mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
-    exp_times = (exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask])
+    exp_times = exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask]
+    exp_times = np.asarray(exp_times).T
     sim_data = load_sim(sim_name)
-    sim_times = np.asarray((sim_data.TFP_to_YFP.values, sim_data.TFP_to_mKate.values))
+    sim_times = np.asarray((sim_data.TFP_to_YFP.values, sim_data.TFP_to_mKate.values)).T
     sim_times += np.random.normal(0, 2, sim_times.shape)
+    df = pd.DataFrame(exp_times, columns=['TFP_to_YFP', 'TFP_to_mKate'])
+    df['origin'] = 'exp'
+    df_sim = pd.DataFrame(sim_times, columns=['TFP_to_YFP', 'TFP_to_mKate'])
+    df_sim['origin'] = 'sim'
+    df_sim = df_sim.dropna(axis=0, how='any')
+    df = df.append(df_sim)
 
-    plot_2dhist(sim_times)
-    plot_show()
-    plot_data(exp_times)
-    plt.scatter(exp_times[0], exp_times[1], alpha=0.1, color='r')
+    cmap_dict = {'sim': 'Blues',
+                 'exp': 'Reds'}
+    color_dict = {'sim': 'b',
+                  'exp': 'r'}
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-35, 35), ylim=(-35, 35))
+    for origin, this_df in df.groupby("origin"):
+        sns.distplot(this_df["TFP_to_YFP"], ax=g.ax_marg_x, color=color_dict[origin])
+        sns.distplot(this_df["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True, color=color_dict[origin])
+        if origin == 'sim':
+            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], cmap=cmap_dict[origin], alpha=0.8,
+                        ax=g.ax_joint)
+        elif origin == 'exp':
+            plt.sca(g.ax_joint)
+            times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
+            times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
+            hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]],
+                                                        bins=np.arange(-30, 36,
+                                                                       5))  # mass_histogram(times, interp=True)
+            # centers_x = (centers_x[:-1] + centers_x[1:])/2
+            # centers_y = (centers_y[:-1] + centers_y[1:])/2
+
+            hist = zoom(hist, 4, order=3)
+            max_count = np.max(hist)
+            hist = hist / max_count
+            plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]),
+                        levels=[0.15, 0.5, 0.8],
+                        cmap=cmap_dict[origin])
+
+    # plot_2dhist(sim_times)
+    # plot_show()
+    # plot_data(exp_times)
+    plt.scatter(exp_times[:, 0], exp_times[:, 1], alpha=0.1, color='r')
     plt.tight_layout()
     plt.savefig(str(img_dir))
     plt.close()
