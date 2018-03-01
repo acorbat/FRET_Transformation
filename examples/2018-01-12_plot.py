@@ -9,6 +9,7 @@ from scipy.ndimage import zoom
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
+from fret_transformation import anisotropy_functions as af
 from fret_transformation import transformation as tf
 from fret_transformation import caspase_model as cm
 from fret_transformation import time_study as ts
@@ -551,7 +552,6 @@ def fig_anisos_box(df):
     fig, axs = plt.subplots(2, 1, figsize=(20, 14), sharex=True)
 
     boxprops = axs[0].boxplot(pres,
-                              notch=True,
                               patch_artist=True)
     for n, fluo in enumerate(fluorophores):
         plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
@@ -559,7 +559,6 @@ def fig_anisos_box(df):
         plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
 
     boxprops = axs[0].boxplot(poss,
-                              notch=True,
                               patch_artist=True)
     for n, fluo in enumerate(fluorophores):
         plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo], ls='--')
@@ -568,7 +567,6 @@ def fig_anisos_box(df):
     axs[0].set_ylabel('Anisotropy')
 
     boxprops = axs[1].boxplot(difs,
-                              notch=True,
                               patch_artist=True)
     for n, fluo in enumerate(fluorophores):
         plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
@@ -634,15 +632,19 @@ def fig_2(df, fluo, ind):
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 16))
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(20, 16))
 
     time = np.linspace(0, 15, 90)
-    axs[0].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
-    axs[0].set_ylabel('Anisotropy')
+    f = af.Fluos_FromInt(df[fluo + '_par_mean'][ind], df[fluo + '_per_mean'][ind])
+    axs[0].plot(time, f, color=Colors[fluo])
+    axs[0].plot(time, df[fluo + '_par_area'][ind], color=Colors[fluo])
 
-    axs[1].plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
-    axs[1].set_ylabel('Derivative')
-    axs[1].set_xlabel('Time (hr)')
+    axs[1].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
+    axs[1].set_ylabel('Anisotropy')
+
+    axs[2].plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
+    axs[2].set_ylabel('Derivative')
+    axs[2].set_xlabel('Time (hr)')
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
@@ -764,11 +766,10 @@ def fig_4c(sim_name='earm10_varligand_4_varrecep_3_varxiap_2'):
     plt.close()
 
 
-def fig_sup_pairtimes():
+def fig_sup_pairtimes(df, name):
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
-    img_dir = work_dir.joinpath('max_act_pairplot.png')
+    img_dir = work_dir.joinpath(name + '_max_act_pairplot.png')
 
-    df = load_data()
     df = df[['TFP_max_activity', 'YFP_max_activity', 'mKate_max_activity']]
     df = df.dropna(axis=0, how='any')
 
