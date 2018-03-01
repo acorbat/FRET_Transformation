@@ -652,6 +652,56 @@ def fig_2(df, fluo, ind):
     plt.close()
 
 
+def fig_2_sim(fluo):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
+    img_dir = img_dir.joinpath('sim_analysis.png')
+
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 14))
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
+    fluo_to_cplx = {'YFP': 'S9:C9',
+                    'mKate': 'S8:C8',
+                    'TFP': 'S3:C3'}
+
+    t = np.arange(0, 54000, 600)
+    earm_params = cm.params.copy()
+
+    ccs = [5E5, 5E6, 5E7]
+    for cc in ccs:
+        for casp in ['S3', 'S8', 'S9']:
+            earm_params[casp].set(value=cc)
+
+        ani_vals = {'YFP': (.23, .29),
+                    'mKate': (.26, .29),
+                    'TFP': (.28, .32)}
+
+        model = cm.simulate(t, earm_params)
+        model = ts.sim_to_ani(model, fluo_to_ani=ani_vals)
+        model = ts.find_complex_in_sim(model)
+
+        time = np.linspace(0, 15, 90)
+        axs[0].plot(time, model[fluo + '_r_from_i'][0], color=Colors[fluo])
+        axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color='gray', ls='--', alpha=0.6)
+        axs[0].set_ylabel('Anisotropy')
+
+        last1, = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
+                    color=Colors[fluo], label='Activity')
+        last2 = axs[1].scatter(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
+                    c=Colors[fluo], edgecolors='k', label='Derivative')
+        axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color='gray', ls='--', alpha=0.6)
+        axs[1].set_ylabel('Derivative')
+        axs[1].set_xlabel('Time (hr)')
+
+    plt.legend([last1, last2], ['Activity', 'Derivative'])
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(img_dir))
+    plt.close()
+
+
 def fig_4b(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_4/')
     dat_dir = img_dir.joinpath('max_act_times_from_data.png')
