@@ -815,7 +815,7 @@ def fig_3a_inlet(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     dat_dir = img_dir.joinpath('onecasp_curves_inlet.png')
 
-    fig, axs = plt.subplots(3, 1, sharex=True , figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
 
     times = {fluo: [] for fluo in fluorophores}
     for i in df.index:
