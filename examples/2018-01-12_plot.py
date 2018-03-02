@@ -788,6 +788,29 @@ def fig_3b(df):
     fig.savefig(str(dat_dir))
 
 
+def fig_3c(df):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
+    img_dir = img_dir.joinpath('onecasp_hist2d.png')
+
+    df_fil = pd.DataFrame()
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            df_fil = df_fil.append(df.loc[i])
+
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil) #, xlim=(-35, 35), ylim=(-35, 35))
+
+    sns.distplot(df_fil["TFP_to_YFP"], ax=g.ax_marg_x)
+    sns.distplot(df_fil["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True)
+    sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.8, n_levels=5,
+                ax=g.ax_joint)
+    plt.sca(g.ax_joint)
+    times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
+    plt.scatter(times[0], times[1], alpha=0.1, color='r')
+    plt.tight_layout()
+    plt.savefig(str(img_dir))
+    plt.close()
+
+
 def fig_4b(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_4/')
     dat_dir = img_dir.joinpath('max_act_times_from_data.png')
