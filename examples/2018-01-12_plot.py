@@ -759,6 +759,35 @@ def fig_3a_superposed(df):
     plt.close()
 
 
+def fig_3b(df):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
+    dat_dir = img_dir.joinpath('pairplot_onecasp.png')
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
+    times = {}
+    for fluo in fluorophores:
+        times[fluo] = df[fluo + '_max_activity'].values[df[fluo + '_good_der'].values]
+
+    for fluo in fluorophores:
+        plt.hist(times[fluo], color=Colors[fluo])
+        his_dir = img_dir.joinpath('fluo_onecasp_hist.png')
+        plt.savefig(str(his_dir))
+        plt.close()
+
+    df_fil = pd.DataFrame()
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            df_fil = df_fil.append(df.loc[i])
+
+    df = df_fil[['TFP_max_activity', 'YFP_max_activity', 'mKate_max_activity']]
+
+    fig = sns.pairplot(df, size=5, kind='reg')
+    fig.savefig(str(dat_dir))
+
+
 def fig_4b(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_4/')
     dat_dir = img_dir.joinpath('max_act_times_from_data.png')
