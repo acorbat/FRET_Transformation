@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from scipy.ndimage import zoom
-from mpl_toolkits.axes_grid.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -775,7 +775,7 @@ def fig_3a_r_single(df, ind, ax):
 def fig_3a_der_single(df, ind, ax):
     time = np.arange(0, 50 * 15, 15) / 60
     for fluo in fluorophores:
-        ax.plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
+        ax.plot(time, df[fluo + '_r_complex'][ind]/np.nanmax(df[fluo + '_r_complex'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
         ax.set_ylabel('Derivative')
         ax.set_xlabel('Time (hr)')
@@ -815,14 +815,23 @@ def fig_3a_inlet(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     dat_dir = img_dir.joinpath('onecasp_curves_inlet.png')
 
-    fig, axs = plt.subplots(2, 1, sharex=True , figsize=(12, 16))
+    fig, axs = plt.subplots(3, 1, sharex=True , figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
 
-    fig_3a_r_single(df, ind, axs[0])
-    inset_axes(axs[0], width='30%', height='30%', loc=2)
+    times = {fluo: [] for fluo in fluorophores}
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                times[fluo].append(df[fluo + '_max_activity'][i] / 60)
+    for fluo in fluorophores:
+        sns.rugplot(times['TFP'], height=1, ax=axs[0], color=Colors[fluo], lw=2, alpha=0.2)
+    axs[0].axis('off')
+
+    fig_3a_r_single(df, ind, axs[1])
+    inset_axes(axs[1], width='30%', height='30%', loc=2)
     fig_3a_r_all(df)
 
-    fig_3a_der_single(df, ind, axs[1])
-    inset_axes(axs[1], width='30%', height='30%', loc=2)
+    fig_3a_der_single(df, ind, axs[2])
+    inset_axes(axs[2], width='30%', height='30%', loc=2)
     fig_3a_der_all(df)
 
     # plt.tight_layout()
@@ -869,7 +878,9 @@ def fig_3c(df):
         if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
             df_fil = df_fil.append(df.loc[i])
 
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil) #, xlim=(-35, 35), ylim=(-35, 35))
+    df_fil = df_fil.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
+
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-20, 20), ylim=(-20, 20))
 
     sns.distplot(df_fil["TFP_to_YFP"], ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True)
@@ -921,7 +932,7 @@ def fig_3d():
     color_dict = {'sim_mod': 'b',
                   'sim_ear': 'g',
                   'exp': 'r'}
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 35), ylim=(-35, 35))
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 35), ylim=(-10, 30))
     for origin, this_df in df.groupby("origin"):
         sns.distplot(this_df["TFP_to_YFP"], ax=g.ax_marg_x, color=color_dict[origin])
         sns.distplot(this_df["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True, color=color_dict[origin])
