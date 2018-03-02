@@ -834,7 +834,7 @@ def fig_3a_inlet(df, ind):
     inset_axes(axs[2], width='30%', height='30%', loc=2)
     fig_3a_der_all(df)
 
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(dat_dir))
     # plt.close()
@@ -867,6 +867,94 @@ def fig_3b(df):
 
     fig = sns.pairplot(df, size=5, kind='reg')
     fig.savefig(str(dat_dir))
+
+
+def fig_3b_r_single(df, ind, ax):
+    time = np.arange(0, 90 * 10, 10) / 60
+    for fluo in fluorophores:
+        ax.plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
+        ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+        ax.set_ylabel('Anisotropy')
+
+
+def fig_3b_der_single(df, ind, ax):
+    time = np.arange(0, 90 * 10, 10) / 60
+    for fluo in fluorophores:
+        ax.plot(time, df[fluo + '_r_complex'][ind]/np.nanmax(df[fluo + '_r_complex'][ind]), color=Colors[fluo])
+        ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+        ax.set_ylabel('Derivative')
+        ax.set_xlabel('Time (hr)')
+
+
+def fig_3b_r_all(df):
+    for i in df.index:
+        if i == 2072:
+            print('skip 2072')
+            continue
+        if i == 1575:
+            print('skip 1575')
+            continue
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                time = np.arange(0, 90 * 10, 10) - df.TFP_max_activity[i]
+                time /= 60
+                plt.plot(time, df[fluo + '_r_from_i'][i], color=Colors[fluo], alpha=0.4)
+                # plt.ylabel('Anisotropy')
+                plt.xticks([])
+                plt.yticks([])
+                plt.xlim([-2.5, 2.5])
+                plt.ylim([0.18, 0.35])
+
+
+def fig_3b_der_all(df):
+    for i in df.index:
+        if i == 2072:
+            print('skip 2072')
+            continue
+        if i == 1575:
+            print('skip 1575')
+            continue
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                time = np.arange(0, 90 * 10, 10) - df.TFP_max_activity[i]
+                time /= 60
+
+                plt.plot(time, df[fluo + '_r_complex'][i], color=Colors[fluo], alpha=0.4)
+                # plt.ylabel('Derivative')
+                # plt.xlabel('Time (hr)')
+                plt.xticks([])
+                plt.yticks([])
+                plt.xlim([-2.5, 2.5])
+                plt.ylim([-0.001, 0.004])
+
+
+def fig_3b_inlet(df, ind):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
+    dat_dir = img_dir.joinpath('exp_curves_inlet.png')
+
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
+
+    times = {fluo: [] for fluo in fluorophores}
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                times[fluo].append(df[fluo + '_max_activity'][i] / 60)
+    for fluo in fluorophores:
+        sns.rugplot(times['TFP'], height=1, ax=axs[0], color=Colors[fluo], lw=2, alpha=0.2)
+    axs[0].axis('off')
+
+    fig_3b_r_single(df, ind, axs[1])
+    inset_axes(axs[1], width='30%', height='30%', loc=2)
+    fig_3b_r_all(df)
+
+    fig_3b_der_single(df, ind, axs[2])
+    inset_axes(axs[2], width='30%', height='30%', loc=2)
+    fig_3b_der_all(df)
+
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(dat_dir))
+    # plt.close()
 
 
 def fig_3c(df):
