@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from scipy.ndimage import zoom
+from mpl_toolkits.axes_grid.inset_locator import inset_axes
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -101,6 +102,10 @@ def plot_show():
 
 
 fluorophores = ['YFP', 'mKate', 'TFP']
+
+Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+          'mKate': (240 / 255, 77 / 255, 35 / 255),
+          'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
 
 def load_sim_and_data(filename='earm10_varligand_4_varrecep_3_varxiap_2'):
@@ -757,6 +762,73 @@ def fig_3a_superposed(df):
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(dat_dir))
     plt.close()
+
+
+def fig_3a_r_single(df, ind, ax):
+    time = np.arange(0, 50 * 15, 15) / 60
+    for fluo in fluorophores:
+        ax.plot(time, df['r_' + fluo][ind], color=Colors[fluo])
+        ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+        ax.set_ylabel('Anisotropy')
+
+
+def fig_3a_der_single(df, ind, ax):
+    time = np.arange(0, 50 * 15, 15) / 60
+    for fluo in fluorophores:
+        ax.plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
+        ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+        ax.set_ylabel('Derivative')
+        ax.set_xlabel('Time (hr)')
+
+
+def fig_3a_r_all(df):
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                time = np.arange(0, 50 * 15, 15) - df.TFP_max_activity[i]
+                time /= 60
+                plt.plot(time, df['r_' + fluo][i], color=Colors[fluo], alpha=0.4)
+                # plt.ylabel('Anisotropy')
+                plt.xticks([])
+                plt.yticks([])
+                plt.xlim([-2.5, 2.5])
+                plt.ylim([0.18, 0.35])
+
+
+def fig_3a_der_all(df):
+    for i in df.index:
+        if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
+            for fluo in fluorophores:
+                time = np.arange(0, 50 * 15, 15) - df.TFP_max_activity[i]
+                time /= 60
+
+                plt.plot(time, df[fluo + '_r_complex'][i], color=Colors[fluo], alpha=0.4)
+                # plt.ylabel('Derivative')
+                # plt.xlabel('Time (hr)')
+                plt.xticks([])
+                plt.yticks([])
+                plt.xlim([-2.5, 2.5])
+                plt.ylim([-0.001, 0.004])
+
+
+def fig_3a_inlet(df, ind):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
+    dat_dir = img_dir.joinpath('onecasp_curves_inlet.png')
+
+    fig, axs = plt.subplots(2, 1, sharex=True , figsize=(12, 16))
+
+    fig_3a_r_single(df, ind, axs[0])
+    inset_axes(axs[0], width='30%', height='30%', loc=2)
+    fig_3a_r_all(df)
+
+    fig_3a_der_single(df, ind, axs[1])
+    inset_axes(axs[1], width='30%', height='30%', loc=2)
+    fig_3a_der_all(df)
+
+    # plt.tight_layout()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(dat_dir))
+    # plt.close()
 
 
 def fig_3b(df):
