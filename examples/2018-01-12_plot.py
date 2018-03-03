@@ -599,33 +599,33 @@ def fig_anisos_violin(df):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
     box_dir = img_dir.joinpath('violinaniso.png')
 
-    pres = []
-    poss = []
-    difs = []
+    pres = {fluo: [] for fluo in fluorophores}
+    poss = {fluo: [] for fluo in fluorophores}
+    difs = {fluo: [] for fluo in fluorophores}
     for fluo in fluorophores:
         pre = df[fluo + '_pre_mean'].values
         mask_pre = np.isfinite(pre)
         pre = pre[mask_pre]
-        pres.append(pre)
+        pres[fluo] = pre
 
         pos = df[fluo + '_pos_mean'].values
         mask_pos = np.isfinite(pos)
         pos = pos[mask_pos]
-        poss.append(pos)
+        poss[fluo] = pos
 
         dif = df[fluo + '_pos_mean'].values - df[fluo + '_pre_mean'].values
         mask_dif = np.isfinite(dif)
         dif = dif[mask_dif]
-        difs.append(dif)
+        difs[fluo] = dif
 
-    fig, axs = plt.subplots(2, 1, figsize=(6, 7), sharex=True)
+    fig, axs = plt.subplots(2, 1, figsize=(8, 9), sharex=True)
 
     df_all = pd.DataFrame()
-    for n, fluo in enumerate(fluorophores):
-        df_pre = pd.DataFrame(pres[n], columns=['ani'])
+    for fluo in fluorophores:
+        df_pre = pd.DataFrame(pres[fluo], columns=['ani'])
         df_pre['time'] = 'pre'
         df_pre['fluo'] = fluo
-        df_pos = pd.DataFrame(poss[n], columns=['ani'])
+        df_pos = pd.DataFrame(poss[fluo], columns=['ani'])
         df_pos['time'] = 'pos'
         df_pos['fluo'] = fluo
 
@@ -634,16 +634,32 @@ def fig_anisos_violin(df):
 
     sns.violinplot(x='fluo', y='ani', hue='time', data=df_all, ax=axs[0], split=True, scale="count",
                    scale_hue=False, order=fluorophores)
+    plt.sca(axs[0])
+    plt.ylabel('Anisotropy')
 
-    boxprops = axs[1].boxplot(difs,
-                              patch_artist=True)
-    for n, fluo in enumerate(fluorophores):
-        plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
-        plt.setp(boxprops['medians'][n], color='k')
-        plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
-    axs[1].set_ylabel('Difference')
+    df_difs = pd.DataFrame()
+    for fluo in fluorophores:
+        df_dif = pd.DataFrame(difs[fluo], columns=['dif'])
+        df_dif['time'] = 'pre'
+        df_dif['fluo'] = fluo
 
-    plt.xticks([1, 2, 3], ['tagBFP/mCerulean', 'mCitrine/mCitrine', 'mCherry/mKate'])
+        df_difs = df_difs.append(df_dif, ignore_index=True)
+
+    sns.violinplot(x='fluo', y='dif', data=df_difs, ax=axs[1], split=True, scale="count",
+                   scale_hue=False, order=fluorophores, palette=Colors)
+
+    # boxprops = axs[1].boxplot([difs['TFP'][0], difs['mKate'][0], difs['YFP'][0]],
+    #                           patch_artist=True)
+    # for n, fluo in enumerate(fluorophores):
+    #     plt.setp(boxprops['boxes'][n], facecolor=Colors[fluo])
+    #     plt.setp(boxprops['medians'][n], color='k')
+    #     plt.setp(boxprops['fliers'][n], markerfacecolor=Colors[fluo], alpha=0.5)
+    # axs[1].set_ylabel('Difference')
+
+    plt.sca(axs[1])
+    plt.xticks([0, 1, 2], ['tagBFP/mCerulean', 'mCitrine/mCitrine', 'mCherry/mKate'], rotation=45)
+    plt.ylabel('Difference')
+    plt.xlabel('')
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(box_dir))
