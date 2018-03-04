@@ -703,7 +703,7 @@ def pdf_best_curves():
     pp.close()
 
 
-def fig_2(df, fluo, ind):
+def fig_2a(df, fluo, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
     img_dir = img_dir.joinpath('typical_analysis.png')
 
@@ -711,31 +711,33 @@ def fig_2(df, fluo, ind):
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(20, 16))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(10,8))
 
     time = np.linspace(0, 15, 90)
-    f = af.Fluos_FromInt(df[fluo + '_par_mean'][ind], df[fluo + '_per_mean'][ind])
-    axs[0].plot(time, f, color=Colors[fluo])
-    axs[0].plot(time, df[fluo + '_par_area'][ind], color=Colors[fluo])
+    # f = af.Fluos_FromInt(df[fluo + '_par_mean'][ind], df[fluo + '_per_mean'][ind])
+    # axs[0].plot(time, f, color=Colors[fluo])
+    # axs[0].plot(time, df[fluo + '_par_area'][ind], color=Colors[fluo])
 
-    axs[1].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
-    axs[1].set_ylabel('Anisotropy')
+    axs[0].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
+    axs[0].axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--', alpha=0.6)
+    axs[0].set_ylabel('Anisotropy')
 
-    axs[2].plot(time, df[fluo + '_r_complex'][ind], color=Colors[fluo])
-    axs[2].set_ylabel('Derivative')
-    axs[2].set_xlabel('Time (hr)')
+    axs[1].plot(time, df[fluo + '_r_complex'][ind] / np.nanmax(df[fluo + '_r_complex'][ind]), color=Colors[fluo])
+    axs[1].axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--', alpha=0.6)
+    axs[1].set_ylabel('Derivative')
+    axs[1].set_xlabel('Time (hr)')
 
-    plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
+    plt.tight_layout()
     plt.savefig(str(img_dir))
     plt.close()
 
 
-def fig_2_sim(fluo):
+def fig_2_sim():
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
     img_dir = img_dir.joinpath('sim_analysis.png')
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(20, 14))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(10, 8))
 
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
@@ -748,7 +750,7 @@ def fig_2_sim(fluo):
     t = np.arange(0, 54000, 600)
     earm_params = cm.params.copy()
 
-    ccs = [5E5, 5E6, 5E7]
+    ccs = [5E5, 5E7]
     for cc in ccs:
         for casp in ['S3', 'S8', 'S9']:
             earm_params[casp].set(value=cc)
@@ -762,19 +764,22 @@ def fig_2_sim(fluo):
         model = ts.find_complex_in_sim(model)
 
         time = np.linspace(0, 15, 90)
-        axs[0].plot(time, model[fluo + '_r_from_i'][0], color=Colors[fluo])
-        axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color='gray', ls='--', alpha=0.6)
-        axs[0].set_ylabel('Anisotropy')
+        casp_plot = {fluo: [] for fluo in fluorophores}
+        for fluo in fluorophores:
+            axs[0].plot(time, model[fluo + '_r_from_i'][0], color=Colors[fluo])
+            axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
+            axs[0].set_ylabel('Anisotropy')
 
-        last1, = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
-                    color=Colors[fluo], label='Activity')
-        last2 = axs[1].scatter(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
-                    c=Colors[fluo], edgecolors='k', label='Derivative')
-        axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color='gray', ls='--', alpha=0.6)
-        axs[1].set_ylabel('Derivative')
-        axs[1].set_xlabel('Time (hr)')
+            casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
+                        color=Colors[fluo], label='Activity')
+            last2 = axs[1].scatter(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
+                        c=Colors[fluo], edgecolors='k', label='Derivative')
+            axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
+            axs[1].set_ylabel('Derivative')
+            axs[1].set_xlabel('Time (hr)')
 
-    plt.legend([last1, last2], ['Activity', 'Derivative'])
+    plt.xlim(2, 10)
+    plt.legend([casp_plot['TFP'], casp_plot['mKate'], casp_plot['YFP'], last2], ['TFP Activity', 'mKate Activity', 'YFP Activity', 'Derivative'])
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(img_dir))
