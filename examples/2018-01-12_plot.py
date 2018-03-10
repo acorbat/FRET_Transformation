@@ -1049,14 +1049,17 @@ def fig_3c(df):
 
     g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-20, 20), ylim=(-20, 20))
 
-    sns.distplot(df_fil["TFP_to_YFP"], ax=g.ax_marg_x)
-    sns.distplot(df_fil["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True)
+    sns.distplot(df_fil["TFP_to_YFP"], kde=False, bins=30, ax=g.ax_marg_x)
+    sns.distplot(df_fil["TFP_to_mKate"], kde=False, bins=30, ax=g.ax_marg_y, vertical=True)
     g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, mincnt=1, cmap='Greys')
     sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, n_levels=5,
                 ax=g.ax_joint)
     # plt.sca(g.ax_joint)
     # times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
     # plt.scatter(times[0], times[1], alpha=0.1, color='r')
+    g.set_axis_labels('BFP to mCit', 'BFP to mKate')
+    g.ax_marg_x.set_xlabel('')
+    g.ax_marg_y.set_ylabel('')
     plt.tight_layout()
     plt.savefig(str(img_dir))
 
