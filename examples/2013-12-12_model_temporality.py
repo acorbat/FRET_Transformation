@@ -38,9 +38,9 @@ Differences_tags = ['TFP_to_YFP', 'TFP_to_mKate', 'YFP_to_mKate']
 # 'XIAP' : (1E3 * min_f * 63, 1E3 * max_f * 63),
 # 'Smac' : (1E3 * min_f * 126, 1E3 * max_f * 126)}#,
 # 'CytoC' : (1E3 * min_f * 1E4, 1E3 * max_f * 1E4)}
-sweep_space = {'S3': (1E6, 1E7),
-               'S8': (1E6, 1E7),
-               'S9': (1E6, 1E7)}  # ,
+sweep_space = {'S3': (1E7, 5E7),
+               'S8': (1E7, 5E7),
+               'S9': (1E7, 5E7)}  # ,
 #                 # 'C3S_ku': (0.5e-6, 2e-6),
 #                 # 'C8S_ku': (0.5e-7, 2e-7),
 #                 # 'C9S_ku': (2.5e-9, 9e-9)}#,
@@ -174,6 +174,13 @@ def sim_and_save(name, other_params):
 #         this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
 #         sim_res = sim_and_save(name, this_params)
 
-name = 'earm10_nomodif.pandas'
+name = 'redVarCS_earm10_nomodif.pandas'
 this_params = cm.params.copy()
+sim_res = sim_and_save(name, this_params)
+
+name = 'redVarCS_earm10_varligand_4_varrecep_3_varxiap_2.pandas'
+this_params = cm.params.copy()
+this_params['L50'].set(value=10 ** 4)
+this_params['RnosiRNA'].set(value=10 ** 3)
+this_params['XIAP'].set(value=1E2)
 sim_res = sim_and_save(name, this_params)
