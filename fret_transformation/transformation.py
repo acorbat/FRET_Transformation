@@ -711,15 +711,31 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
     fluorophores = [col for col in df.columns if col_to_der in col]
     fluorophores = [col.split('_')[0] for col in fluorophores]
 
+    # delta_b = {'YFP': 0.2,
+    #            'mKate': -0.15,
+    #            'TFP': 0.1}
+    delta_b = {'YFP': 0.17,
+               'mKate': -0.15,
+               'TFP': 0.15}
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
     ders = {}
     maxs = {}
+    der_interps = {}
+    m_interps = {}
     for fluo in fluorophores:
         ders[fluo] = []
         maxs[fluo] = []
+        der_interps[fluo] = []
+        m_interps[fluo] = []
 
     for i in df.index:
         for fluo in fluorophores:
-            if np.isfinite(df[fluo+'_rate'][i]):
+            if np.isfinite(df[fluo + '_rate'][i]):
+            # if all(np.isfinite([df[fluo+'_' + mom + '_mean'][i] for mom in ['pre', 'pos']])):
 
                 r = df['_'.join([fluo, col_to_der])][i]
                 r = replace_nan(r)
@@ -742,22 +758,35 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
                     x0 = df[fluo+'_x0'][i]
                     rate = df[fluo+'_rate'][i]
                     r_reg, ind = sigmoid_region(x0, rate, r, minimal=0.01, timepoints=timepoints)
+                    r_reg_norm = 1 - Normalize(r_reg)
+                    # r_reg_norm = (r_reg - df[fluo + '_pos_mean'][i]) / (df[fluo + '_pre_mean'][i] - df[fluo + '_pos_mean'][i])
+                    r_der_reg = r_der[ind:ind+len(r_reg)]
+                    m_der = r_der_reg / ((1 + delta_b[fluo] * r_reg_norm) ** 2)
                     this_time = time[ind:ind+len(r_reg)]
 
-                    max_act = get_max_ind(der_interp[ind*timepoints:(ind+len(r_reg))*timepoints]) + ind*timepoints
+                    t = np.arange(0, len(r) * timepoints)
+                    t = t[(ind*timepoints):((ind+len(r_reg))*timepoints)]
+                    f = splrep(this_time, m_der, k=3)
+                    m_der_interp = splev(t, f, der=0)
+
+                    max_act = get_max_ind(m_der_interp) + ind * timepoints
+                    m_der_interp = [0] * (ind * timepoints) + \
+                                   list(m_der_interp) + \
+                                   [0] * ((len(r) - ind - len(r_reg)) * timepoints)
 
                     if Plot:
                         fig, axs = plt.subplots(2,1, sharex=True, figsize=(10,12))
-                        axs[0].plot(this_time, r_reg, 'o'+Colors[fluo])
-                        axs[0].plot(time, r, Colors[fluo]+'--', alpha=0.5)
+                        axs[0].plot(this_time, r_reg, 'o', color=Colors[fluo])
+                        axs[0].plot(time, r, color=Colors[fluo], ls='--', alpha=0.5)
                         axs[0].set_ylabel('fraction')
 
                         axs[1].plot(time, r_der)
-                        axs[1].plot(t, der_interp, Colors[fluo])
+                        axs[1].plot(t, der_interp, color=Colors[fluo])
+                        axs[1].plot(t, m_der_interp, color=Colors[fluo], ls='--')
                         axs[1].set_ylabel('complex')
                         axs[1].set_xlabel('time (min.)')
 
-                        plt.suptitle('obj:'+str(i)+' exp:'+df.Content_YFP[i]+' max:'+str(max_act))
+                        # plt.suptitle('obj:'+str(i)+' exp:'+df.Content_YFP[i]+' max:'+str(max_act))
                         last_maxs = [fluo+' '+str(maxs[fluo][-1]) for fluo in fluorophores]
                         note = '\n'.join(last_maxs)
                         plt.show()
@@ -765,17 +794,165 @@ def find_complex(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
 
                     ders[fluo].append(r_der)
                     maxs[fluo].append(max_act)
+                    der_interps[fluo].append(der_interp)
+                    m_interps[fluo].append(m_der_interp)
 
                 else:
                     ders[fluo].append([np.nan])
                     maxs[fluo].append(np.nan)
+                    der_interps[fluo].append([np.nan])
+                    m_interps[fluo].append([np.nan])
 
             else:
                 ders[fluo].append([np.nan])
                 maxs[fluo].append(np.nan)
+                der_interps[fluo].append([np.nan])
+                m_interps[fluo].append([np.nan])
 
     for fluo in fluorophores:
         df[fluo+'_r_complex'] = ders[fluo]
         df[fluo+'_max_activity'] = maxs[fluo]
+        df[fluo + '_r_der_interp'] = der_interps[fluo]
+        df[fluo + '_m_interp'] = m_interps[fluo]
+
+    return df
+
+
+def find_complex2(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=False):
+    """
+    Takes the whole dataframe and applies finite differences to data in order
+    to find the derivative of the sigmoid region anisotropy data of filtered
+    curves.
+
+    This function first selects the sigmoid region of the data, does a linear
+    interpolation over missing data, replacing with nearest at end and
+    beginning of curves. Finite differences is used to find the first
+    derivative, and filter noise. Spline interpolation is used to
+    find maximum at the derived curve. Maximum cannot be found at the
+    beginning and ending of curves (this is usually caused by interpolation) so
+    these values are discarded.
+
+    Parameters
+    ----------
+    df : Pandas DataFrame
+        DataFrame containing the curves for each fluorophores, the best fit
+        values, which are used to filter the curves as well.
+    col_to_der : string, optional
+        suffix of column to derive. Default is "r_from_i".
+    order : optional, odd int
+        Number of points to be used in the finite differences. Must be odd.
+        Default is 5.
+    timepoints : float or int
+        Spacing between timepoints. Default is 10.
+    Plot : boolean, optional
+        True if plots are to be showed. Default is False.
+
+    Returns
+    -------
+    df : Pandas DataFrame
+        Updated Pandas DataFrame
+    """
+    fluorophores = [col for col in df.columns if col_to_der in col]
+    fluorophores = [col.split('_')[0] for col in fluorophores]
+
+    delta_b = {'YFP': 0.1,
+               'mKate': -0.3,
+               'TFP': 0.2}
+
+    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+
+    ders = {}
+    maxs = {}
+    r_interps = {}
+    der_interps = {}
+    m_interps = {}
+    for fluo in fluorophores:
+        ders[fluo] = []
+        maxs[fluo] = []
+        r_interps[fluo] = []
+        der_interps[fluo] = []
+        m_interps[fluo] = []
+
+    for i in df.index:
+        for fluo in fluorophores:
+            # if np.isfinite(df[fluo + '_rate'][i]):
+            if all(np.isfinite([df[fluo+'_' + mom + '_mean'][i] for mom in ['pre', 'pos']])):
+
+                r = df['_'.join([fluo, col_to_der])][i]
+                r = replace_nan(r)
+                time = np.arange(0, len(r)*timepoints, timepoints)
+
+                if all(np.isfinite(r)) and len(r)>1:
+                    plot = True
+
+                    t = np.arange(0, len(r) * timepoints)
+                    r = savgol(r, window_length=5, polyorder=4, mode='nearest')
+                    f = splrep(time, r, k=3)
+                    r_interp = splev(t, f, der=0)
+
+                    def this_vect(t):
+                        ind = t
+                        ind = np.clip(ind, 0, len(r_interp)-1)
+                        return r_interp[ind]
+
+                    r_der = derivative(this_vect, t, dx=1, order=order)
+
+                    x0 = df[fluo+'_x0'][i]
+                    rate = df[fluo+'_rate'][i]
+                    r_reg, ind = sigmoid_region(x0, rate, r_interp, minimal=0.01, timepoints=1, n_min=50, n_max=300)
+                    # r_reg_norm = 1 - Normalize(r_reg)
+                    r_reg_norm = (r_reg - df[fluo + '_pos_mean'][i]) / (df[fluo + '_pre_mean'][i] - df[fluo + '_pos_mean'][i])
+                    r_der_reg = r_der[ind:ind+len(r_reg)]
+                    m_der = r_der_reg / ((1 + delta_b[fluo] * r_reg_norm) ** 2)
+
+                    max_act = get_max_ind(m_der) + ind
+                    m_der_interp = [0] * ind + list(m_der) + [0] * (len(r_interp) - ind - len(r_reg))
+
+                    if Plot:
+                        fig, axs = plt.subplots(2,1, sharex=True, figsize=(10,12))
+                        axs[0].plot(this_time, r_reg, 'o', color=Colors[fluo])
+                        axs[0].plot(time, r, color=Colors[fluo], ls='--', alpha=0.5)
+                        axs[0].set_ylabel('fraction')
+
+                        axs[1].plot(time, r_der)
+                        axs[1].plot(t, der_interp, color=Colors[fluo])
+                        axs[1].plot(t, m_der_interp, color=Colors[fluo], ls='--')
+                        axs[1].set_ylabel('complex')
+                        axs[1].set_xlabel('time (min.)')
+
+                        # plt.suptitle('obj:'+str(i)+' exp:'+df.Content_YFP[i]+' max:'+str(max_act))
+                        last_maxs = [fluo+' '+str(maxs[fluo][-1]) for fluo in fluorophores]
+                        note = '\n'.join(last_maxs)
+                        plt.show()
+                        print(note)
+
+                    ders[fluo].append(r_der)
+                    maxs[fluo].append(max_act)
+                    r_interps[fluo].append(r_interp)
+                    der_interps[fluo].append(r_der)
+                    m_interps[fluo].append(m_der_interp)
+
+                else:
+                    ders[fluo].append([np.nan])
+                    maxs[fluo].append(np.nan)
+                    r_interps[fluo].append([np.nan])
+                    der_interps[fluo].append([np.nan])
+                    m_interps[fluo].append([np.nan])
+
+            else:
+                ders[fluo].append([np.nan])
+                maxs[fluo].append(np.nan)
+                r_interps[fluo].append([np.nan])
+                der_interps[fluo].append([np.nan])
+                m_interps[fluo].append([np.nan])
+
+    for fluo in fluorophores:
+        df[fluo+'_r_complex'] = ders[fluo]
+        df[fluo+'_max_activity'] = maxs[fluo]
+        df[fluo + '_r_interp'] = r_interps[fluo]
+        df[fluo + '_r_der_interp'] = der_interps[fluo]
+        df[fluo + '_m_interp'] = m_interps[fluo]
 
     return df

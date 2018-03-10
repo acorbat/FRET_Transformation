@@ -137,6 +137,7 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
     fluo_to_cas = {'YFP': 'SC9',
                    'mKate': 'SC8',
                    'TFP': 'SC3'}
+
     t = np.arange(0, 72000, 600)
     earm_params = cm.params.copy()
     for casp in ['S3', 'S8', 'S9']:
@@ -208,13 +209,13 @@ def timedif_from_params(params, Differences_tags, fluorophores=['YFP', 'mKate', 
 def sim_to_ani(df, col='r_from_i', fluo_to_ani=None):
     """Takes a DataFrame from simulation and add a column "col" for each
     fluorophore with the corresponding anisotropy."""
-    fluo_to_cas = {'YFP': 'SC9',
-                   'mKate': 'SC8',
+    fluo_to_cas = {'YFP': 'SC3',
+                   'mKate': 'SC3',
                    'TFP': 'SC3'}
     if fluo_to_ani is None:
-        fluo_to_ani = {'YFP': (.22, .3),
-                       'mKate': (.23, .28),
-                       'TFP': (.28, .34)}
+        fluo_to_ani = {'YFP': (.22, .3, 1),
+                       'mKate': (.23, .28, 1),
+                       'TFP': (.28, .34, 1)}
 
     for fluo in fluo_to_cas.keys():
         sens_norm = [sens/np.nanmax(sens)
@@ -222,7 +223,7 @@ def sim_to_ani(df, col='r_from_i', fluo_to_ani=None):
         anis = [af.Anisotropy_FromFit(m,
                                       fluo_to_ani[fluo][1],
                                       fluo_to_ani[fluo][0],
-                                      1)
+                                      fluo_to_ani[fluo][2])
                 for m in sens_norm]
 
         df['_'.join([fluo, col])] = anis
@@ -290,6 +291,10 @@ def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=
     fluorophores = [col for col in df.columns if col_to_der in col]
     fluorophores = [col.split('_')[0] for col in fluorophores]
 
+    delta_b = {'YFP': 0.1,
+             'mKate': 0.3,
+             'TFP': -0.05}
+
     ders = {}
     maxs = {}
     for fluo in fluorophores:
@@ -301,6 +306,8 @@ def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=
             r = df['_'.join([fluo, col_to_der])][i]
             if r[0]!=r[-1]:
                 time = np.arange(0, len(r)*timepoints, timepoints)
+                r_norm = r - np.nanmin(r)
+                r_norm = r_norm / np.nanmax(r_norm)
 
                 def this_vect(t):
                     ind = t//timepoints
@@ -308,6 +315,7 @@ def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=
                     return r[ind]
 
                 r_der = [derivative(this_vect, inst, dx=timepoints, order=order) for inst in time]
+                r_der = r_der / ((1 + delta_b[fluo] * r_norm) ** 2)
 
                 t = np.arange(0, len(r)*timepoints)
                 f = splrep(time, r_der, k=3, s=0)

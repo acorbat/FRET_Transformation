@@ -16,7 +16,7 @@ from fret_transformation import caspase_model as cm
 from fret_transformation import time_study as ts
 
 
-def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
+def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived_corrected'):
     """Loads filename data from 2017-09-04_Images folder."""
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
     data_dir = work_dir.joinpath(filename + '.pandas')
@@ -388,8 +388,8 @@ def compare_all_sims(function):
     for i in [4, 5, 6]:
         df['bin_' + str(i) + '_mean'] = [np.mean(bins) for bins in df['bins_' + str(i)].values]
         df['bin_' + str(i) + '_std'] = [np.std(bins) for bins in df['bins_' + str(i)].values]
-    json_dir = work_dir.joinpath('comparison.json')
-    csv_dir = work_dir.joinpath('comparison.csv')
+    json_dir = work_dir.joinpath('comparison_corr.json')
+    csv_dir = work_dir.joinpath('comparison_corr.csv')
     df.to_json(str(json_dir), orient='index')
     df.to_csv(str(csv_dir))
 
@@ -1051,7 +1051,7 @@ def fig_3c(df):
 
     sns.distplot(df_fil["TFP_to_YFP"], ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True)
-    g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, cmap='Greys')
+    g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, mincnt=1, cmap='Greys')
     sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, n_levels=5,
                 ax=g.ax_joint)
     # plt.sca(g.ax_joint)
@@ -1061,14 +1061,14 @@ def fig_3c(df):
     plt.savefig(str(img_dir))
 
 
-def fig_3d():
+def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     img_dir = img_dir.joinpath('exp_and_sim_hist2d.png')
 
     fluorophores = ['YFP', 'mKate', 'TFP']
-    exp_data = load_data()
+    exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename +'.pandas')
     exp_data = exp_data.query('Content == "TNF alpha"')
-    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    mask = [all([np.isfinite(exp_data[fluo + '_max_activity'][i]) for fluo in fluorophores]) for i in exp_data.index]
     exp_times = exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask]
     exp_times = np.asarray(exp_times).T
 
@@ -1094,15 +1094,20 @@ def fig_3d():
     df = df.append(df_sim_mod)
 
     cmap_dict = {'sim_mod': 'Blues',
-                 'sim_ear': 'Greens',
-                 'exp': 'Reds'}
+                 'sim_ear': 'Purples',
+                 'exp': 'Oranges'}
     color_dict = {'sim_mod': 'b',
-                  'sim_ear': 'g',
-                  'exp': 'r'}
+                  'sim_ear': [64 / 255, 2 / 255, 126 / 255],
+                  'exp': [226 / 255, 85 / 255, 8 / 255]}
     g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 35), ylim=(-10, 30))
     for origin, this_df in df.groupby("origin"):
-        sns.distplot(this_df["TFP_to_YFP"], ax=g.ax_marg_x, color=color_dict[origin])
-        sns.distplot(this_df["TFP_to_mKate"], ax=g.ax_marg_y, vertical=True, color=color_dict[origin])
+        if 'sim' in origin:
+            sns.kdeplot(this_df["TFP_to_YFP"], shade=True, ax=g.ax_marg_x, color=color_dict[origin])
+            sns.kdeplot(this_df["TFP_to_mKate"], shade=True, ax=g.ax_marg_y, vertical=True, color=color_dict[origin])
+        elif origin == 'exp':
+            sns.distplot(this_df["TFP_to_YFP"], bins=50, kde=False, ax=g.ax_marg_x, color=color_dict[origin], hist_kws={'normed': True})
+            sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin], hist_kws={'normed': True})
+
         if 'sim' in origin:
             sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], cmap=cmap_dict[origin], alpha=0.8,
                         ax=g.ax_joint, shade_lowest=False)
@@ -1127,6 +1132,11 @@ def fig_3d():
     # plot_show()
     # plot_data(exp_times)
     # plt.scatter(exp_times[:, 0], exp_times[:, 1], alpha=0.1, color='r')
+    g.set_axis_labels('cas3 to cas9', 'cas3 to cas8')
+    g.ax_marg_x.set_xlabel('')
+    g.ax_marg_y.set_ylabel('')
+    g.ax_marg_x.legend_.remove()
+    g.ax_marg_y.legend_.remove()
     plt.tight_layout()
     plt.savefig(str(img_dir))
     # plt.close()

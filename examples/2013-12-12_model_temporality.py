@@ -15,7 +15,7 @@ from fret_transformation import time_study as ts
 
 # Load data
 work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
-data_dir = work_dir.joinpath('2017-10-16_complex_noErode_order05_filtered_derived.pandas')
+data_dir = work_dir.joinpath('OneCasp/OneCasp_derivations_order05_filtered.pandas')
 df = pd.read_pickle(str(data_dir))
 
 # Define lists of parameters to be used
@@ -56,7 +56,7 @@ save_dir = work_dir.joinpath('sim_params')
 
 
 def sim_and_save(name, other_params):
-    param_df = ts.generate_param_sweep(1000, space_params=sweep_space)
+    param_df = ts.generate_param_sweep(50, space_params=sweep_space)
     savename = save_dir.joinpath(name)
     pdf_path = savename.with_suffix('.pdf')
     with PdfPages(str(pdf_path)) as pp:
@@ -174,6 +174,13 @@ def sim_and_save(name, other_params):
 #         this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
 #         sim_res = sim_and_save(name, this_params)
 
-name = 'earm10_nomodif.pandas'
+name = 'redVarCs3_earm10_nomodif.pandas'
 this_params = cm.params.copy()
+sim_res = sim_and_save(name, this_params)
+
+name = 'redVarCs3_earm10_varligand_4_varrecep_3_varxiap_2.pandas'
+this_params = cm.params.copy()
+this_params['L50'].set(value=10 ** 4)
+this_params['RnosiRNA'].set(value=10 ** 3)
+this_params['XIAP'].set(value=1E2)
 sim_res = sim_and_save(name, this_params)
