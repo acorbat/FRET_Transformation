@@ -618,7 +618,7 @@ def fig_anisos_violin(df):
         dif = dif[mask_dif]
         difs[fluo] = dif
 
-    fig, axs = plt.subplots(2, 1, figsize=(8, 9), sharex=True)
+    fig, axs = plt.subplots(2, 1, figsize=(6, 7), sharex=True)
 
     df_all = pd.DataFrame()
     for fluo in fluorophores:
@@ -632,7 +632,7 @@ def fig_anisos_violin(df):
         df_all = df_all.append(df_pre, ignore_index=True)
         df_all = df_all.append(df_pos, ignore_index=True)
 
-    sns.violinplot(x='fluo', y='ani', hue='time', data=df_all, ax=axs[0], split=True, scale="count",
+    sns.violinplot(x='fluo', y='ani', hue='time', data=df_all, ax=axs[0], split=True, scale="count", inner='quartile',
                    scale_hue=False, order=fluorophores)
     plt.sca(axs[0])
     plt.ylabel('Anisotropy')
@@ -645,7 +645,7 @@ def fig_anisos_violin(df):
 
         df_difs = df_difs.append(df_dif, ignore_index=True)
 
-    sns.violinplot(x='fluo', y='dif', data=df_difs, ax=axs[1], split=True, scale="count",
+    sns.violinplot(x='fluo', y='dif', data=df_difs, ax=axs[1], split=True, scale="count", inner='quartile',
                    scale_hue=False, order=fluorophores, palette=Colors)
 
     # boxprops = axs[1].boxplot([difs['TFP'][0], difs['mKate'][0], difs['YFP'][0]],
@@ -657,7 +657,7 @@ def fig_anisos_violin(df):
     # axs[1].set_ylabel('Difference')
 
     plt.sca(axs[1])
-    plt.xticks([0, 1, 2], ['tagBFP/mCerulean', 'mCitrine/mCitrine', 'mCherry/mKate'], rotation=45)
+    plt.xticks([0, 1, 2], ['BFP', 'mCit', 'mKate'])
     plt.ylabel('Difference')
     plt.xlabel('')
     plt.tight_layout()
