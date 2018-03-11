@@ -852,11 +852,11 @@ def fig_3a_r_single(df, ind, ax):
 
 
 def fig_3a_der_single(df, ind, ax):
-    time = np.arange(0, 50 * 15, 15) / 60
+    time = np.arange(0, 50 * 15) / 60
     for fluo in fluorophores:
-        ax.plot(time, df[fluo + '_r_complex'][ind]/np.nanmax(df[fluo + '_r_complex'][ind]), color=Colors[fluo])
+        ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
-        ax.set_ylabel('Derivative')
+        ax.set_ylabel('Activity(a.u.)')
         ax.set_xlabel('Time (hr)')
 
 
@@ -878,10 +878,13 @@ def fig_3a_der_all(df):
     for i in df.index:
         if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
             for fluo in fluorophores:
-                time = np.arange(0, 50 * 15, 15) - df.TFP_max_activity[i]
+                time = np.arange(0, 50 * 15) - df.TFP_max_activity[i]
                 time /= 60
 
-                plt.plot(time, df[fluo + '_r_complex'][i], color=Colors[fluo], alpha=0.4)
+                comp = df[fluo + '_m_interp'][i]
+                # comp = comp / np.nanmax(comp)
+
+                plt.plot(time, comp, color=Colors[fluo], alpha=0.4)
                 # plt.ylabel('Derivative')
                 # plt.xlabel('Time (hr)')
                 plt.xticks([])
@@ -892,7 +895,7 @@ def fig_3a_der_all(df):
 
 def fig_3a_inlet(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
-    dat_dir = img_dir.joinpath('onecasp_curves_inlet.png')
+    dat_dir = img_dir.joinpath('onecasp_curves_inlet_mod.png')
 
     fig, axs = plt.subplots(3, 1, sharex=True, figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
 
@@ -961,7 +964,7 @@ def fig_3b_der_single(df, ind, ax):
     for fluo in fluorophores:
         ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
-        ax.set_ylabel('Derivative')
+        ax.set_ylabel('Activity (a.u.)')
         ax.set_xlabel('Time (hr)')
         ax.set_ylim([-0.1, 1.1])
 
