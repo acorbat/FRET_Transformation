@@ -57,7 +57,7 @@ save_dir = work_dir.joinpath('sim_params')
 
 
 def sim_and_save(name, other_params):
-    param_df = ts.generate_param_sweep(50, space_params=sweep_space)
+    param_df = ts.generate_param_sweep(1000, space_params=sweep_space)
     savename = save_dir.joinpath(name)
     pdf_path = savename.with_suffix('.pdf')
     with PdfPages(str(pdf_path)) as pp:
@@ -92,7 +92,7 @@ def sim_and_save(name, other_params):
 # xiap_deg = [.1, .05, .01, .005, 0]
 # xiap_ku = np.arange(2, 6.2, 1)
 # fs = np.arange(2.8, 3.7, 0.2)
-# ligands = [3, 4, 5]
+ligands = [3, 4, 5]
 # mults = [-2, -1, 2, 3, 4]
 
 # for this_xiap in xiap:
@@ -155,10 +155,20 @@ def sim_and_save(name, other_params):
 
 # for this_ligand in ligands:
 #     for this_recep in ligands:
-#         name = 'earm10_varligand_%01d_varrecep_%01d.pandas' % (this_ligand, this_recep)
+#         name = 'redVarCS1_earm10_varligand_%01d_varrecep_%01d_varxiap_2.pandas' % (this_ligand, this_recep)
 #         this_params = cm.params.copy()
 #         this_params['L50'].set(value=10 ** this_ligand)
 #         this_params['RnosiRNA'].set(value=10 ** this_recep)
+#         this_params['XIAP'].set(value=1E2)
+#         sim_res = sim_and_save(name, this_params)
+#
+# for this_ligand in ligands:
+#     for this_recep in ligands:
+#         name = 'redVarCS1_earm10_varligand_%01d_varrecep_%01d_varxiap_3.pandas' % (this_ligand, this_recep)
+#         this_params = cm.params.copy()
+#         this_params['L50'].set(value=10 ** this_ligand)
+#         this_params['RnosiRNA'].set(value=10 ** this_recep)
+#         this_params['XIAP'].set(value=1E3)
 #         sim_res = sim_and_save(name, this_params)
 
 # for L_kc in L_kcs:
@@ -175,13 +185,13 @@ def sim_and_save(name, other_params):
 #         this_params[sen+'_kc'].set(value=this_params[sen+'_kc'].value * (10 ** (mult)))
 #         sim_res = sim_and_save(name, this_params)
 
-# name = 'redVarCs3_earm10_nomodif.pandas'
+# name = 'redVarCs_earm10_nomodif.pandas'
 # this_params = cm.params.copy()
 # sim_res = sim_and_save(name, this_params)
-
-name = 'redVarCs4_earm10_varligand_4_varrecep_3_varxiap_2.pandas'
+#
+name = 'redVarCs_earm10_varligand_3_varrecep_3_varxiap_2.pandas'
 this_params = cm.params.copy()
-this_params['L50'].set(value=10 ** 4)
+this_params['L50'].set(value=10 ** 3)
 this_params['RnosiRNA'].set(value=10 ** 3)
 this_params['XIAP'].set(value=1E2)
 sim_res = sim_and_save(name, this_params)

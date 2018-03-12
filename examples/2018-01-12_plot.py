@@ -1084,17 +1084,17 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     img_dir = img_dir.joinpath('exp_and_sim_hist2d.png')
 
     fluorophores = ['YFP', 'mKate', 'TFP']
-    exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename +'.pandas')
+    exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename + '.pandas')
     exp_data = exp_data.query('Content == "TNF alpha"')
     mask = [all([np.isfinite(exp_data[fluo + '_max_activity'][i]) for fluo in fluorophores]) for i in exp_data.index]
     exp_times = exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask]
     exp_times = np.asarray(exp_times).T
 
-    sim_mod_data = load_sim(filename='earm10_varligand_4_varrecep_3_varxiap_2')
+    sim_mod_data = load_sim(filename='redVarCs_earm10_varligand_3_varrecep_3_varxiap_2')
     sim_mod_times = np.asarray((sim_mod_data.TFP_to_YFP.values, sim_mod_data.TFP_to_mKate.values)).T
     sim_mod_times += np.random.normal(0, 2, sim_mod_times.shape)
 
-    sim_ear_data = load_sim(filename='earm10_nomodif')
+    sim_ear_data = load_sim(filename='redVarCs_earm10_nomodif')
     sim_ear_times = np.asarray((sim_ear_data.TFP_to_YFP.values, sim_ear_data.TFP_to_mKate.values)).T
     sim_ear_times += np.random.normal(0, 2, sim_ear_times.shape)
 
