@@ -291,9 +291,13 @@ def find_complex_in_sim(df, col_to_der='r_from_i', order=5, timepoints=10, Plot=
     fluorophores = [col for col in df.columns if col_to_der in col]
     fluorophores = [col.split('_')[0] for col in fluorophores]
 
-    delta_b = {'YFP': 0.1,
-             'mKate': 0.3,
-             'TFP': -0.05}
+    # delta_b = {'YFP': 0.1,
+    #          'mKate': 0.3,
+    #          'TFP': -0.05}
+
+    delta_b = {'YFP': 0,
+               'mKate': 0,
+               'TFP': 0}
 
     ders = {}
     maxs = {}
