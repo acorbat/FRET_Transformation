@@ -15,6 +15,7 @@ from fret_transformation import transformation as tf
 from fret_transformation import caspase_model as cm
 from fret_transformation import time_study as ts
 
+matplotlib.rcParams.update({'font.size': 8})
 
 def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived_corrected'):
     """Loads filename data from 2017-09-04_Images folder."""
@@ -597,7 +598,7 @@ def fig_anisos_violin(df):
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
-    box_dir = img_dir.joinpath('violinaniso.png')
+    box_dir = img_dir.joinpath('violinaniso.svg')
 
     pres = {fluo: [] for fluo in fluorophores}
     poss = {fluo: [] for fluo in fluorophores}
@@ -618,7 +619,7 @@ def fig_anisos_violin(df):
         dif = dif[mask_dif]
         difs[fluo] = dif
 
-    fig, axs = plt.subplots(2, 1, figsize=(6, 7), sharex=True)
+    fig, axs = plt.subplots(2, 1, figsize=(3.3, 3.8), sharex=True)
 
     df_all = pd.DataFrame()
     for fluo in fluorophores:
@@ -635,6 +636,7 @@ def fig_anisos_violin(df):
     sns.violinplot(x='fluo', y='ani', hue='time', data=df_all, ax=axs[0], split=True, scale="count", inner='quartile',
                    scale_hue=False, order=fluorophores)
     plt.sca(axs[0])
+    plt.yticks([0.22, 0.26, 0.30, 0.34])
     plt.ylabel('Anisotropy')
 
     df_difs = pd.DataFrame()
@@ -657,12 +659,13 @@ def fig_anisos_violin(df):
     # axs[1].set_ylabel('Difference')
 
     plt.sca(axs[1])
+    plt.ylim([0, 0.09])
     plt.xticks([0, 1, 2], ['BFP', 'mKate', 'mCit'])
     plt.ylabel('Difference')
     plt.xlabel('')
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
-    plt.savefig(str(box_dir))
+    plt.savefig(str(box_dir), format='svg')
 
 
 def pdf_best_curves():
@@ -743,9 +746,9 @@ def fig_2_sim():
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
-    fluo_to_cplx = {'YFP': 'S9:C9',
-                    'mKate': 'S8:C8',
-                    'TFP': 'S3:C3'}
+    fluo_to_cplx = {'YFP': 'SC9',
+                    'mKate': 'SC8',
+                    'TFP': 'SC3'}
 
     t = np.arange(0, 54000, 600)
     earm_params = cm.params.copy()
@@ -755,13 +758,18 @@ def fig_2_sim():
         for casp in ['S3', 'S8', 'S9']:
             earm_params[casp].set(value=cc)
 
-        ani_vals = {'YFP': (.23, .29),
-                    'mKate': (.26, .29),
-                    'TFP': (.28, .32)}
+        ani_vals = {'YFP': (.23, .29, 1),
+                    'mKate': (.26, .29, 1),
+                    'TFP': (.28, .32, 1)}
 
         model = cm.simulate(t, earm_params)
         model = ts.sim_to_ani(model, fluo_to_ani=ani_vals)
         model = ts.find_complex_in_sim(model)
+
+        real_vals = pd.DataFrame()
+        for fluo in fluorophores:
+            real_vals[fluo + '_r_from_i'] = model[fluo_to_cplx[fluo]].values
+        real_vals = ts.find_complex_in_sim(real_vals)
 
         time = np.linspace(0, 15, 90)
         casp_plot = {fluo: [] for fluo in fluorophores}
@@ -770,20 +778,26 @@ def fig_2_sim():
             axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
             axs[0].set_ylabel('Anisotropy')
 
-            casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
-                        color=Colors[fluo], label='Activity')
-            last2 = axs[1].scatter(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
-                        c=Colors[fluo], edgecolors='k', label='Derivative')
+            # casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
+            #             color=Colors[fluo], label='Activity')
+            last2 = axs[1].plot(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
+                                   color=Colors[fluo], label='Derivative')
             axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
+            max_time = real_vals[fluo + '_max_activity'][0] / 60
+            dx = 0.12
+            dy = 0.06
+            axs[1].arrow(max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc=Colors[fluo], ec='k',
+                         length_includes_head=True)
             axs[1].set_ylabel('Derivative')
             axs[1].set_xlabel('Time (hr)')
+            axs[1].set_ylim([-0.01, 1.15])
 
     plt.xlim(2, 10)
-    plt.legend([casp_plot['TFP'], casp_plot['mKate'], casp_plot['YFP'], last2], ['TFP Activity', 'mKate Activity', 'YFP Activity', 'Derivative'])
+    # plt.legend([casp_plot['TFP'], casp_plot['mKate'], casp_plot['YFP'], last2], ['TFP Activity', 'mKate Activity', 'YFP Activity', 'Derivative'])
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
     plt.savefig(str(img_dir))
-    plt.close()
+    # plt.close()
 
 
 def fig_3a(df, ind):
