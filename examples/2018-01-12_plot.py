@@ -657,7 +657,7 @@ def fig_anisos_violin(df):
     # axs[1].set_ylabel('Difference')
 
     plt.sca(axs[1])
-    plt.xticks([0, 1, 2], ['BFP', 'mCit', 'mKate'])
+    plt.xticks([0, 1, 2], ['BFP', 'mKate', 'mCit'])
     plt.ylabel('Difference')
     plt.xlabel('')
     plt.tight_layout()
