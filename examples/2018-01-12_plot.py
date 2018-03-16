@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from scipy.ndimage import zoom
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, zoomed_inset_axes, mark_inset
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -708,39 +708,40 @@ def pdf_best_curves():
 
 def fig_2a(df, fluo, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
-    img_dir = img_dir.joinpath('typical_analysis.png')
+    img_dir = img_dir.joinpath('typical_analysis.svg')
 
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(10,8))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 5))
 
     time = np.linspace(0, 15, 90)
     # f = af.Fluos_FromInt(df[fluo + '_par_mean'][ind], df[fluo + '_per_mean'][ind])
     # axs[0].plot(time, f, color=Colors[fluo])
     # axs[0].plot(time, df[fluo + '_par_area'][ind], color=Colors[fluo])
 
-    axs[0].plot(time, df[fluo + '_r_from_i'][ind], color=Colors[fluo])
-    axs[0].axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--', alpha=0.6)
+    axs[0].plot(time, df[fluo + '_r_from_i'][ind], color='k')
+    axs[0].axvline(x=df[fluo + '_max_activity'][ind] / 60, color='k', ls='--', alpha=0.6)
     axs[0].set_ylabel('Anisotropy')
+    axs[0].set_yticks([0.23, 0.25, 0.27, 0.29])
 
-    axs[1].plot(time, df[fluo + '_r_complex'][ind] / np.nanmax(df[fluo + '_r_complex'][ind]), color=Colors[fluo])
-    axs[1].axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--', alpha=0.6)
+    axs[1].plot(time, df[fluo + '_r_complex'][ind] / np.nanmax(df[fluo + '_r_complex'][ind]), color='k')
+    axs[1].axvline(x=df[fluo + '_max_activity'][ind] / 60, color='k', ls='--', alpha=0.6)
     axs[1].set_ylabel('Derivative')
     axs[1].set_xlabel('Time (hr)')
+    axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1])
 
-    plt.subplots_adjust(hspace=.0)
     plt.tight_layout()
-    plt.savefig(str(img_dir))
-    plt.close()
+    plt.subplots_adjust(hspace=.0)
+    plt.savefig(str(img_dir), format='svg')
 
 
 def fig_2_sim():
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
-    img_dir = img_dir.joinpath('sim_analysis.png')
+    img_dir = img_dir.joinpath('sim_analysis.svg')
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(10, 8))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 5))
 
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
@@ -758,9 +759,9 @@ def fig_2_sim():
         for casp in ['S3', 'S8', 'S9']:
             earm_params[casp].set(value=cc)
 
-        ani_vals = {'YFP': (.23, .29, 1),
-                    'mKate': (.26, .29, 1),
-                    'TFP': (.28, .32, 1)}
+        ani_vals = {'YFP': (.23, .28, 1),
+                    'mKate': (.23, .28, 1),
+                    'TFP': (.23, .28, 1)}
 
         model = cm.simulate(t, earm_params)
         model = ts.sim_to_ani(model, fluo_to_ani=ani_vals)
@@ -774,29 +775,30 @@ def fig_2_sim():
         time = np.linspace(0, 15, 90)
         casp_plot = {fluo: [] for fluo in fluorophores}
         for fluo in fluorophores:
-            axs[0].plot(time, model[fluo + '_r_from_i'][0], color=Colors[fluo])
-            axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
-            axs[0].set_ylabel('Anisotropy')
+            if (fluo == 'TFP' and cc == 5E5) or (fluo == 'YFP' and cc == 5E7):
+                axs[0].plot(time, model[fluo + '_r_from_i'][0], color='k')
+                axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color='k', ls='--', lw=2, alpha=0.6)
+                axs[0].set_ylabel('Anisotropy')
 
-            # casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
-            #             color=Colors[fluo], label='Activity')
-            last2 = axs[1].plot(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
-                                   color=Colors[fluo], label='Derivative')
-            axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color=Colors[fluo], ls='--', lw=2, alpha=0.6)
-            max_time = real_vals[fluo + '_max_activity'][0] / 60
-            dx = 0.12
-            dy = 0.06
-            axs[1].arrow(max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc=Colors[fluo], ec='k',
-                         length_includes_head=True)
-            axs[1].set_ylabel('Derivative')
-            axs[1].set_xlabel('Time (hr)')
-            axs[1].set_ylim([-0.01, 1.15])
+                # casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
+                #             color=Colors[fluo], label='Activity')
+                last2 = axs[1].plot(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
+                                       color='k', label='Derivative')
+                axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color='k', ls='--', lw=2, alpha=0.6)
+                max_time = real_vals[fluo + '_max_activity'][0] / 60
+                dx = 0.12
+                dy = 0.06
+                axs[1].arrow(max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc='k', ec='k',
+                             length_includes_head=True)
+                axs[1].set_ylabel('Derivative')
+                axs[1].set_xlabel('Time (hr)')
+                axs[1].set_ylim([-0.01, 1.15])
 
     plt.xlim(2, 10)
     # plt.legend([casp_plot['TFP'], casp_plot['mKate'], casp_plot['YFP'], last2], ['TFP Activity', 'mKate Activity', 'YFP Activity', 'Derivative'])
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
-    plt.savefig(str(img_dir))
+    plt.savefig(str(img_dir), format='svg')
     # plt.close()
 
 
@@ -867,11 +869,27 @@ def fig_3a_r_single(df, ind, ax):
 
 def fig_3a_der_single(df, ind, ax):
     time = np.arange(0, 50 * 15) / 60
+    axins = zoomed_inset_axes(ax, 4, loc=1)
     for fluo in fluorophores:
         ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
         ax.set_ylabel('Activity(a.u.)')
         ax.set_xlabel('Time (hr)')
+
+        axins.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
+        axins.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+
+    # sub region of the original image
+    x1, x2, y1, y2 = 8.8, 9.2, 0.8, 1.01
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+
+    plt.xticks([])
+    plt.yticks([])
+
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=1, loc2=3, fc="none", ec="0.5")
 
 
 def fig_3a_r_all(df):
@@ -892,10 +910,10 @@ def fig_3a_der_all(df):
     for i in df.index:
         if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
             for fluo in fluorophores:
-                time = np.arange(0, 50 * 15) - df.TFP_max_activity[i]
+                time = np.arange(0, 50 * 15, 15) - df.TFP_max_activity[i]
                 time /= 60
 
-                comp = df[fluo + '_m_interp'][i]
+                comp = df[fluo + '_r_complex'][i]
                 # comp = comp / np.nanmax(comp)
 
                 plt.plot(time, comp, color=Colors[fluo], alpha=0.4)
@@ -909,9 +927,9 @@ def fig_3a_der_all(df):
 
 def fig_3a_inlet(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
-    dat_dir = img_dir.joinpath('onecasp_curves_inlet_mod.png')
+    dat_dir = img_dir.joinpath('onecasp_curves_inlet_mod.svg')
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 3), gridspec_kw = {'height_ratios':[1, 15, 15]})
 
     times = {fluo: [] for fluo in fluorophores}
     for i in df.index:
@@ -925,6 +943,7 @@ def fig_3a_inlet(df, ind):
     fig_3a_r_single(df, ind, axs[1])
     inset_axes(axs[1], width='30%', height='30%', loc=2)
     fig_3a_r_all(df)
+    axs[1].set_yticks([0.23, 0.25, 0.27, 0.29, 0.31])
 
     fig_3a_der_single(df, ind, axs[2])
     inset_axes(axs[2], width='30%', height='30%', loc=2)
@@ -932,7 +951,7 @@ def fig_3a_inlet(df, ind):
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
-    plt.savefig(str(dat_dir))
+    plt.savefig(str(dat_dir), format='svg')
     # plt.close()
 
 
@@ -975,12 +994,28 @@ def fig_3b_r_single(df, ind, ax):
 
 def fig_3b_der_single(df, ind, ax):
     time = np.arange(0, 90 * 10) / 60
+    axins = zoomed_inset_axes(ax, 7, loc=1)
     for fluo in fluorophores:
         ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
         ax.set_ylabel('Activity (a.u.)')
         ax.set_xlabel('Time (hr)')
         ax.set_ylim([-0.1, 1.1])
+
+        axins.plot(time, df[fluo + '_m_interp'][ind] / np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
+        axins.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
+
+        # sub region of the original image
+    x1, x2, y1, y2 = 6, 6.4, 0.9, 1.01
+    axins.set_xlim(x1, x2)
+    axins.set_ylim(y1, y2)
+
+    plt.xticks([])
+    plt.yticks([])
+
+    # draw a bbox of the region of the inset axes in the parent axes and
+    # connecting lines between the bbox and the inset axes area
+    mark_inset(ax, axins, loc1=1, loc2=3, fc="none", ec="0.5")
 
 
 def fig_3b_r_all(df):
@@ -1013,7 +1048,7 @@ def fig_3b_der_all(df):
             continue
         if all([df[fluo + '_good_der'][i] for fluo in fluorophores]):
             for fluo in fluorophores:
-                time = np.arange(0, 90 * 10) - df.TFP_max_activity[i]
+                time = np.arange(0, 90 * 10, 10) - df.TFP_max_activity[i]
                 time /= 60
                 try:
                     ind_start = np.where(time < -2.5)[0][-1]
@@ -1024,7 +1059,7 @@ def fig_3b_der_all(df):
                 except IndexError:
                     ind_end = 900
                 time = time[ind_start:ind_end]
-                comp = df[fluo + '_m_interp'][i][ind_start:ind_end]
+                comp = df[fluo + '_r_complex'][i][ind_start:ind_end]
                 # comp = comp / np.nanmax(comp)
 
                 plt.plot(time, comp, color=Colors[fluo], alpha=0.4)
@@ -1038,9 +1073,9 @@ def fig_3b_der_all(df):
 
 def fig_3b_inlet(df, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
-    dat_dir = img_dir.joinpath('exp_curves_inlet_mod.png')
+    dat_dir = img_dir.joinpath('exp_curves_inlet_mod.svg')
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(6, 7), gridspec_kw = {'height_ratios':[1, 15, 15]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 3), gridspec_kw = {'height_ratios':[1, 15, 15]})
 
     times = {fluo: [] for fluo in fluorophores}
     for i in df.index:
@@ -1053,6 +1088,7 @@ def fig_3b_inlet(df, ind):
 
     fig_3b_r_single(df, ind, axs[1])
     inset_axes(axs[1], width='30%', height='30%', loc=2)
+    axs[1].set_yticks([0.23, 0.25, 0.27, 0.29, 0.31])
     fig_3b_r_all(df)
 
     fig_3b_der_single(df, ind, axs[2])
@@ -1061,13 +1097,13 @@ def fig_3b_inlet(df, ind):
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
-    plt.savefig(str(dat_dir))
+    plt.savefig(str(dat_dir), format='svg')
     # plt.close()
 
 
 def fig_3c(df):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
-    img_dir = img_dir.joinpath('onecasp_hist2d.png')
+    img_dir = img_dir.joinpath('onecasp_hist2d.svg')
 
     df_fil = pd.DataFrame()
     for i in df.index:
@@ -1076,7 +1112,7 @@ def fig_3c(df):
 
     df_fil = df_fil.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
 
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-20, 20), ylim=(-20, 20))
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-20, 20), ylim=(-20, 20), size=3.3)
 
     sns.distplot(df_fil["TFP_to_YFP"], kde=False, bins=30, ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], kde=False, bins=30, ax=g.ax_marg_y, vertical=True)
@@ -1086,16 +1122,16 @@ def fig_3c(df):
     # plt.sca(g.ax_joint)
     # times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
     # plt.scatter(times[0], times[1], alpha=0.1, color='r')
-    g.set_axis_labels('BFP to mCit', 'BFP to mKate')
+    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y)', '$\Delta$t (Cas3-b, Cas8-r)')
     g.ax_marg_x.set_xlabel('')
     g.ax_marg_y.set_ylabel('')
     plt.tight_layout()
-    plt.savefig(str(img_dir))
+    plt.savefig(str(img_dir), format='svg')
 
 
 def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
-    img_dir = img_dir.joinpath('exp_and_sim_hist2d.png')
+    img_dir = img_dir.joinpath('exp_and_sim_hist2d.svg')
 
     fluorophores = ['YFP', 'mKate', 'TFP']
     exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename + '.pandas')
@@ -1131,7 +1167,7 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     color_dict = {'sim_mod': 'b',
                   'sim_ear': [64 / 255, 2 / 255, 126 / 255],
                   'exp': [226 / 255, 85 / 255, 8 / 255]}
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 35), ylim=(-10, 30))
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 30), ylim=(-10, 20), size=3.3)
     for origin, this_df in df.groupby("origin"):
         if 'sim' in origin:
             sns.kdeplot(this_df["TFP_to_YFP"], shade=True, ax=g.ax_marg_x, color=color_dict[origin])
@@ -1141,8 +1177,8 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
             sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin], hist_kws={'normed': True})
 
         if 'sim' in origin:
-            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], cmap=cmap_dict[origin], alpha=0.8,
-                        ax=g.ax_joint, shade_lowest=False)
+            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], cmap=cmap_dict[origin], alpha=1,
+                        levels=[0, 0.0015, 0.0025, 0.005, 0.0075, 0.009], ax=g.ax_joint, shade_lowest=False)
         elif origin == 'exp':
             plt.sca(g.ax_joint)
             times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
@@ -1164,13 +1200,13 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     # plot_show()
     # plot_data(exp_times)
     # plt.scatter(exp_times[:, 0], exp_times[:, 1], alpha=0.1, color='r')
-    g.set_axis_labels('cas3 to cas9', 'cas3 to cas8')
+    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y)', '$\Delta$t (Cas3-b, Cas8-r)')
     g.ax_marg_x.set_xlabel('')
     g.ax_marg_y.set_ylabel('')
     g.ax_marg_x.legend_.remove()
     g.ax_marg_y.legend_.remove()
     plt.tight_layout()
-    plt.savefig(str(img_dir))
+    plt.savefig(str(img_dir), format='svg')
     # plt.close()
 
 
