@@ -1117,7 +1117,7 @@ def fig_3c(df):
     sns.distplot(df_fil["TFP_to_YFP"], kde=False, bins=30, ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], kde=False, bins=30, ax=g.ax_marg_y, vertical=True)
     g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, mincnt=1, cmap='Greys')
-    sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, n_levels=5,
+    sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, n_levels=[0.25, 0.75],
                 ax=g.ax_joint)
     # plt.sca(g.ax_joint)
     # times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
