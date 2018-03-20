@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from scipy.ndimage import zoom
+from scipy.stats import gaussian_kde
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, zoomed_inset_axes, mark_inset
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
@@ -17,7 +18,7 @@ from fret_transformation import time_study as ts
 
 matplotlib.rcParams.update({'font.size': 8})
 
-def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived_corrected'):
+def load_data(filename='2017-10-16_complex_noErode_order05_filtered_derived_corrected_refiltered'):
     """Loads filename data from 2017-09-04_Images folder."""
     work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/')
     data_dir = work_dir.joinpath(filename + '.pandas')
@@ -399,17 +400,65 @@ def compare_all_sims(function):
     return df
 
 
-def plot_comparison_from_df(df):
+def plot_comparison_from_df(df, savename, height=None):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    img_dir = img_dir.joinpath(savename + '.svg')
+
+    if height is None:
+        height = len(df) * 0.25
     df = df.sort_values(by='bin_5_mean', ascending=False)
-    plt.figure(figsize=(14, 30))
+    plt.figure(figsize=(3.2, height))
     color_dict = {'4': 'g', '5': 'r', '6': 'b'}
     for i, this_c in color_dict.items():
         plt.errorbar(df['bin_' + str(i) + '_mean'].values, np.arange(len(df['bin_' + str(i) + '_mean'].values)),
                      xerr=df['bin_' + str(i) + '_std'].values, marker='o', color=this_c, ecolor=this_c, ls='none',
                      elinewidth=3)
+    plt.ylim((-1, len(df.file.values)))
     plt.yticks(np.arange(len(df.file.values)), df.file.values)
     plt.grid()
     plt.tight_layout()
+    plt.savefig(str(img_dir), format='svg')
+
+
+def classify_and_plot_comparison():
+    work_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/compare_hist')
+    csv_dir = work_dir.joinpath('comparison_corr.csv')
+    df = pd.read_csv(str(csv_dir))
+    df = df.dropna()
+
+    df_q = df.query('file.str.contains("prop")', engine='python')
+
+    for i in df_q.index:
+        if 'prop4' in df.file[i]:
+            name = '4 variables ' + df_q.file[i].split('_')[-1]
+            df_q.set_value(i, 'file', name)
+
+        elif 'prop5' in df.file[i]:
+            name = '5 variables ' + df_q.file[i].split('_')[-1]
+            df_q.set_value(i, 'file', name)
+
+        else:
+            name = '3 variables ' + df_q.file[i].split('_')[-1]
+            df_q.set_value(i, 'file', name)
+
+    plot_comparison_from_df(df_q, 'proportionals')
+
+    df_q = df.query('file.str.contains("redVarCS1_")', engine='python')
+
+    for i in df_q.index:
+        if 'nomodif' in df.file[i]:
+            name = 'No modification'
+            df_q.set_value(i, 'file', name)
+
+        else:
+            seps = df_q.file[i].split('_')
+            lig = seps[3]
+            rec = seps[5]
+            xia =seps[-1]
+            name = 'XIAP ' + xia + '\nreceptor ' + rec + '\nligand ' + lig
+            df_q.set_value(i, 'file', name)
+
+    plot_comparison_from_df(df_q, 'redVarCs', height=7.5)
 
 
 def estimate_pre_and_post():
@@ -670,6 +719,7 @@ def fig_anisos_violin(df):
 
 def pdf_best_curves():
     good_curves = [2188,
+                   2177,
                    2330,
                    2355,
                    2357,
@@ -1101,6 +1151,22 @@ def fig_3b_inlet(df, ind):
     # plt.close()
 
 
+def get_level_for_kde(x, y, level):
+    kde = gaussian_kde([x, y])
+    probs = kde.pdf([x, y])
+    arr = np.asarray([x, y, probs]).T
+    arr = arr[arr[:, 2].argsort()]
+    ind = np.ceil(len(x) * level).astype(int)
+    return arr[ind, 2]
+
+def get_levels_for_kde(x, y, levels):
+    vals = []
+    for level in levels:
+        val = get_level_for_kde(x, y, level)
+        vals.append(val)
+    return vals
+
+
 def fig_3c(df):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     img_dir = img_dir.joinpath('onecasp_hist2d.svg')
@@ -1117,7 +1183,7 @@ def fig_3c(df):
     sns.distplot(df_fil["TFP_to_YFP"], kde=False, bins=30, ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], kde=False, bins=30, ax=g.ax_marg_y, vertical=True)
     g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, mincnt=1, cmap='Greys')
-    sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, n_levels=[0.25, 0.75],
+    sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, levels=get_levels_for_kde(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], [0.34, 0.68]),
                 ax=g.ax_joint)
     # plt.sca(g.ax_joint)
     # times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
@@ -1133,20 +1199,23 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     img_dir = img_dir.joinpath('exp_and_sim_hist2d.svg')
 
+    cov = np.array([[27.4241789, 2.48916841], [2.48916841, 21.80573026]])
+
     fluorophores = ['YFP', 'mKate', 'TFP']
+    my_lvls = [0.34, 0.68]
     exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename + '.pandas')
     exp_data = exp_data.query('Content == "TNF alpha"')
-    mask = [all([np.isfinite(exp_data[fluo + '_max_activity'][i]) for fluo in fluorophores]) for i in exp_data.index]
+    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
     exp_times = exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask]
     exp_times = np.asarray(exp_times).T
 
     sim_mod_data = load_sim(filename='redVarCs_earm10_varligand_3_varrecep_3_varxiap_2')
     sim_mod_times = np.asarray((sim_mod_data.TFP_to_YFP.values, sim_mod_data.TFP_to_mKate.values)).T
-    sim_mod_times += np.random.normal(0, 2, sim_mod_times.shape)
+    sim_mod_times += np.random.multivariate_normal([0, 0], cov*0.75, sim_mod_times.shape[0])
 
     sim_ear_data = load_sim(filename='redVarCs_earm10_nomodif')
     sim_ear_times = np.asarray((sim_ear_data.TFP_to_YFP.values, sim_ear_data.TFP_to_mKate.values)).T
-    sim_ear_times += np.random.normal(0, 2, sim_ear_times.shape)
+    sim_ear_times += np.random.multivariate_normal([0, 0], cov*0.75, sim_ear_times.shape[0])
 
     df = pd.DataFrame(exp_times, columns=['TFP_to_YFP', 'TFP_to_mKate'])
     df['origin'] = 'exp'
@@ -1161,40 +1230,53 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     df = df.append(df_sim_ear)
     df = df.append(df_sim_mod)
 
-    cmap_dict = {'sim_mod': 'Blues',
-                 'sim_ear': 'Purples',
-                 'exp': 'Oranges'}
+    cmap_dict = {'sim_mod': 'Blues_d',
+                 'sim_ear': 'Purples_d',
+                 'exp': 'Oranges_d'}
     color_dict = {'sim_mod': 'b',
                   'sim_ear': [64 / 255, 2 / 255, 126 / 255],
                   'exp': [226 / 255, 85 / 255, 8 / 255]}
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-40, 30), ylim=(-10, 20), size=3.3)
+    color_dict = {'sim_mod': [[0 / 255, 0 / 255, 255 / 255], [140 / 255, 140 / 255, 255 / 255]],
+                  'sim_ear': [[64 / 255, 2 / 255, 126 / 255], [146 / 255, 39 / 255, 252 / 255]],
+                  'exp': [[226 / 255, 85 / 255, 8 / 255], [250 / 255, 155 / 255, 103 / 255]]}
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-45, 25), ylim=(-10, 20), size=3.3)
     for origin, this_df in df.groupby("origin"):
         if 'sim' in origin:
-            sns.kdeplot(this_df["TFP_to_YFP"], shade=True, ax=g.ax_marg_x, color=color_dict[origin])
-            sns.kdeplot(this_df["TFP_to_mKate"], shade=True, ax=g.ax_marg_y, vertical=True, color=color_dict[origin])
+            sns.kdeplot(this_df["TFP_to_YFP"], shade=True, ax=g.ax_marg_x, color=color_dict[origin][0])
+            sns.kdeplot(this_df["TFP_to_mKate"], shade=True, ax=g.ax_marg_y, vertical=True, color=color_dict[origin][0])
         elif origin == 'exp':
-            sns.distplot(this_df["TFP_to_YFP"], bins=50, kde=False, ax=g.ax_marg_x, color=color_dict[origin], hist_kws={'normed': True})
-            sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin], hist_kws={'normed': True})
+            sns.distplot(this_df["TFP_to_YFP"], bins=50, kde=False, ax=g.ax_marg_x, color=color_dict[origin][0], hist_kws={'normed': True})
+            sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin][0], hist_kws={'normed': True})
 
         if 'sim' in origin:
-            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], cmap=cmap_dict[origin], alpha=1,
-                        levels=[0, 0.0015, 0.0025, 0.005, 0.0075, 0.009], ax=g.ax_joint, shade_lowest=False)
+            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1,
+                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls), ax=g.ax_joint, shade_lowest=False)
         elif origin == 'exp':
             plt.sca(g.ax_joint)
-            times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
-            times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
-            hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]],
-                                                        bins=np.arange(-30, 36,
-                                                                       5))  # mass_histogram(times, interp=True)
-            # centers_x = (centers_x[:-1] + centers_x[1:])/2
-            # centers_y = (centers_y[:-1] + centers_y[1:])/2
+            # times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
+            # times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
+            # hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]],
+            #                                             bins=np.arange(-30, 36,
+            #                                                            5))  # mass_histogram(times, interp=True)
+            # # centers_x = (centers_x[:-1] + centers_x[1:])/2
+            # # centers_y = (centers_y[:-1] + centers_y[1:])/2
+            #
+            # hist = zoom(hist, 4, order=3)
+            # max_count = np.max(hist)
+            # hist = hist / max_count
+            # plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]),
+            #             levels=[0.25, 0.5, 0.75, 0.9],
+            #             cmap=cmap_dict[origin])
+            this_df = this_df.query('TFP_to_YFP > -30 and TFP_to_YFP < 35 and TFP_to_mKate > -30 and TFP_to_mKate < 35')
+            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1, clip=((-30, 35), (-30, 35)),
+                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls),
+                        ax=g.ax_joint, shade_lowest=False)
 
-            hist = zoom(hist, 4, order=3)
-            max_count = np.max(hist)
-            hist = hist / max_count
-            plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]),
-                        levels=[0.15, 0.25, 0.5, 0.75, 0.9],
-                        cmap=cmap_dict[origin])
+    onecasp_df = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/OneCasp/OneCasp_derivations_order05_filtered_corrected.pandas')
+    onecasp_df = onecasp_df.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
+    sns.kdeplot(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], colors='grey', cmap=None, linestyles='dashed', alpha=0.4,
+                levels=get_levels_for_kde(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], my_lvls),
+                ax=g.ax_joint)
 
     # plot_2dhist(sim_times)
     # plot_show()
