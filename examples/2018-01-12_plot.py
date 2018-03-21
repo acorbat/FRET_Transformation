@@ -429,16 +429,20 @@ def classify_and_plot_comparison():
     df_q = df.query('file.str.contains("prop")', engine='python')
 
     for i in df_q.index:
+        num = int(df_q.file[i].split('_')[-1])
+        if num > 10:
+            num /= 100
+        num = "%.2f" % num
         if 'prop4' in df.file[i]:
-            name = '4 variables ' + df_q.file[i].split('_')[-1]
+            name = '5 | ' + num
             df_q.set_value(i, 'file', name)
 
         elif 'prop5' in df.file[i]:
-            name = '5 variables ' + df_q.file[i].split('_')[-1]
+            name = '6 | ' + num
             df_q.set_value(i, 'file', name)
 
         else:
-            name = '3 variables ' + df_q.file[i].split('_')[-1]
+            name = '4 | ' + num
             df_q.set_value(i, 'file', name)
 
     plot_comparison_from_df(df_q, 'proportionals')
@@ -455,7 +459,7 @@ def classify_and_plot_comparison():
             lig = seps[3]
             rec = seps[5]
             xia =seps[-1]
-            name = 'XIAP ' + xia + '\nreceptor ' + rec + '\nligand ' + lig
+            name = xia + ' | ' + rec + ' | ' + lig
             df_q.set_value(i, 'file', name)
 
     plot_comparison_from_df(df_q, 'redVarCs', height=7.5)
@@ -1158,6 +1162,7 @@ def get_level_for_kde(x, y, level):
     arr = arr[arr[:, 2].argsort()]
     ind = np.ceil(len(x) * level).astype(int)
     return arr[ind, 2]
+
 
 def get_levels_for_kde(x, y, levels):
     vals = []
