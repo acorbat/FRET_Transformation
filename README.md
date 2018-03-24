@@ -35,3 +35,6 @@ Needs numpy, matplotlib, anisotropy_functions, transformation and caspase_fit.
 This module generates the Ordinary Differential Equations for the Sorger Model of apoptotic signalling cascade. It also contains a Parameters class object from lmfit that can be used to analyze the effect of different parameters in the model. The simulate function runs a simulation with the specified parameters.
 
 Needs numpy, pandas, scipy and lmfit.
+
+# TODO
+- Separate curve analyzers from dataframe sweepers.
