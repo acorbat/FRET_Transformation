@@ -789,7 +789,7 @@ def fig_2a(df, fluo, ind):
     axs[1].axvline(x=df[fluo + '_max_activity'][ind] / 60, color='k', ls='--', alpha=0.6)
     for img_time in img_times:
         axs[1].axvline(x=img_time / 60, color='b', lw=1, alpha=0.6)
-    axs[1].set_ylabel('Activity')
+    axs[1].set_ylabel('Activity (a.u.)')
     axs[1].set_xlabel('Time (h)')
     axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1])
 
@@ -856,7 +856,7 @@ def fig_2_sim():
                 dy = 0.06
                 axs[1].arrow(force_max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc='k', ec='k',
                              length_includes_head=True)
-                axs[1].set_ylabel('Activity')
+                axs[1].set_ylabel('Activity (a.u.)')
                 axs[1].set_xlabel('Time (h)')
                 axs[1].set_ylim([-0.01, 1.15])
 
