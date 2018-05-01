@@ -646,7 +646,7 @@ def fig_anisos_box(df):
 
 
 def fig_anisos_violin(df):
-    fluorophores = ['TFP', 'mKate', 'YFP']
+    fluorophores = ['TFP', 'YFP', 'mKate']
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
@@ -689,6 +689,7 @@ def fig_anisos_violin(df):
     sns.violinplot(x='fluo', y='ani', hue='time', data=df_all, ax=axs[0], split=True, scale="count", inner='quartile',
                    scale_hue=False, order=fluorophores)
     plt.sca(axs[0])
+    plt.ylim([0.21, 0.37])
     plt.yticks([0.22, 0.26, 0.30, 0.34])
     plt.ylabel('Anisotropy')
 
@@ -713,7 +714,7 @@ def fig_anisos_violin(df):
 
     plt.sca(axs[1])
     plt.ylim([0, 0.09])
-    plt.xticks([0, 1, 2], ['BFP', 'mKate', 'mCit'])
+    plt.xticks([0, 1, 2], ['x-b', 'x-r', 'x-y'])
     plt.ylabel('Difference')
     plt.xlabel('')
     plt.tight_layout()
