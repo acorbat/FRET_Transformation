@@ -765,11 +765,13 @@ def fig_2a(df, fluo, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
     img_dir = img_dir.joinpath('typical_analysis.svg')
 
+    img_times = [0, 6 * 60, 6 * 60 + 30, 6 * 60 + 45, 10 * 60]
+
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': (59 / 255, 198 / 255, 244 / 255)}
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 5))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 3.3))
 
     time = np.linspace(0, 15, 90)
     # f = af.Fluos_FromInt(df[fluo + '_par_mean'][ind], df[fluo + '_per_mean'][ind])
@@ -778,12 +780,16 @@ def fig_2a(df, fluo, ind):
 
     axs[0].plot(time, df[fluo + '_r_from_i'][ind], color='k')
     axs[0].axvline(x=df[fluo + '_max_activity'][ind] / 60, color='k', ls='--', alpha=0.6)
+    for img_time in img_times:
+        axs[0].axvline(x=img_time / 60, color='b', lw=1, alpha=0.6)
     axs[0].set_ylabel('Anisotropy')
     axs[0].set_yticks([0.23, 0.25, 0.27, 0.29])
 
     axs[1].plot(time, df[fluo + '_r_complex'][ind] / np.nanmax(df[fluo + '_r_complex'][ind]), color='k')
     axs[1].axvline(x=df[fluo + '_max_activity'][ind] / 60, color='k', ls='--', alpha=0.6)
-    axs[1].set_ylabel('Derivative')
+    for img_time in img_times:
+        axs[1].axvline(x=img_time / 60, color='b', lw=1, alpha=0.6)
+    axs[1].set_ylabel('Activity')
     axs[1].set_xlabel('Time (hr)')
     axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1])
 
