@@ -1297,11 +1297,13 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
                 levels=get_levels_for_kde(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], my_lvls),
                 ax=g.ax_joint)
 
+    g.ax_joint.axvline(x=0, color='k', lw=1, ls='--', alpha=0.5)
+    g.ax_joint.axhline(y=0, color='k', lw=1, ls='--', alpha=0.5)
     # plot_2dhist(sim_times)
     # plot_show()
     # plot_data(exp_times)
     # plt.scatter(exp_times[:, 0], exp_times[:, 1], alpha=0.1, color='r')
-    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y)', '$\Delta$t (Cas3-b, Cas8-r)')
+    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y) (min.)', '$\Delta$t (Cas3-b, Cas8-r) (min.)')
     g.ax_marg_x.set_xlabel('')
     g.ax_marg_y.set_ylabel('')
     g.ax_marg_x.legend_.remove()
