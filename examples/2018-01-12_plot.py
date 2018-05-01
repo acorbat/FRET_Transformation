@@ -1065,7 +1065,7 @@ def fig_3b_der_single(df, ind, ax):
         ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
         ax.set_ylabel('Activity (a.u.)')
-        ax.set_xlabel('Time (hr)')
+        ax.set_xlabel('Time (h)')
         ax.set_ylim([-0.1, 1.1])
 
         axins.plot(time, df[fluo + '_m_interp'][ind] / np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
@@ -1137,7 +1137,7 @@ def fig_3b_der_all(df):
                 plt.ylim([-0.001, 0.004])
 
 
-def fig_3b_inlet(df, ind):
+def fig_3b_inlet(df, ind=2355):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     dat_dir = img_dir.joinpath('exp_curves_inlet_mod.svg')
 
@@ -1158,8 +1158,8 @@ def fig_3b_inlet(df, ind):
     fig_3b_r_all(df)
 
     fig_3b_der_single(df, ind, axs[2])
-    inset_axes(axs[2], width='30%', height='30%', loc=2)
-    fig_3b_der_all(df)
+    # inset_axes(axs[2], width='30%', height='30%', loc=2)
+    # fig_3b_der_all(df)
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
@@ -1202,10 +1202,12 @@ def fig_3c(df):
     g.ax_joint.hexbin(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], gridsize=20, mincnt=1, cmap='Greys')
     sns.kdeplot(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], cmap='viridis', alpha=0.6, levels=get_levels_for_kde(df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"], [0.34, 0.68]),
                 ax=g.ax_joint)
+    g.ax_joint.axvline(x=0, color='k', lw=1, ls='--', alpha=0.5)
+    g.ax_joint.axhline(y=0, color='k', lw=1, ls='--', alpha=0.5)
     # plt.sca(g.ax_joint)
     # times = np.asarray([df_fil["TFP_to_YFP"], df_fil["TFP_to_mKate"]])
     # plt.scatter(times[0], times[1], alpha=0.1, color='r')
-    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y)', '$\Delta$t (Cas3-b, Cas8-r)')
+    g.set_axis_labels('$\Delta$t (Cas3-b, Cas3-y) (min.)', '$\Delta$t (Cas3-b, Cas3-r) (min.)')
     g.ax_marg_x.set_xlabel('')
     g.ax_marg_y.set_ylabel('')
     plt.tight_layout()
