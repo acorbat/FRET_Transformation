@@ -408,7 +408,8 @@ def plot_comparison_from_df(df, savename, height=None):
         height = len(df) * 0.25
     df = df.sort_values(by='bin_5_mean', ascending=False)
     plt.figure(figsize=(3.2, height))
-    color_dict = {'4': 'g', '5': 'r', '6': 'b'}
+    # color_dict = {'4': 'g', '5': 'r', '6': 'b'}
+    color_dict = {'5': 'r'}
     for i, this_c in color_dict.items():
         plt.errorbar(df['bin_' + str(i) + '_mean'].values, np.arange(len(df['bin_' + str(i) + '_mean'].values)),
                      xerr=df['bin_' + str(i) + '_std'].values, marker='o', color=this_c, ecolor=this_c, ls='none',
