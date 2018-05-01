@@ -939,8 +939,8 @@ def fig_3a_der_single(df, ind, ax):
     for fluo in fluorophores:
         ax.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         ax.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
-        ax.set_ylabel('Activity(a.u.)')
-        ax.set_xlabel('Time (hr)')
+        ax.set_ylabel('Activity (a.u.)')
+        ax.set_xlabel('Time (h)')
 
         axins.plot(time, df[fluo + '_m_interp'][ind]/np.nanmax(df[fluo + '_m_interp'][ind]), color=Colors[fluo])
         axins.axvline(x=df[fluo + '_max_activity'][ind] / 60, color=Colors[fluo], ls='--')
@@ -991,7 +991,7 @@ def fig_3a_der_all(df):
                 plt.ylim([-0.001, 0.004])
 
 
-def fig_3a_inlet(df, ind):
+def fig_3a_inlet(df, ind=142):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_3/')
     dat_dir = img_dir.joinpath('onecasp_curves_inlet_mod.svg')
 
@@ -1012,8 +1012,8 @@ def fig_3a_inlet(df, ind):
     axs[1].set_yticks([0.23, 0.25, 0.27, 0.29, 0.31])
 
     fig_3a_der_single(df, ind, axs[2])
-    inset_axes(axs[2], width='30%', height='30%', loc=2)
-    fig_3a_der_all(df)
+    # inset_axes(axs[2], width='30%', height='30%', loc=2)
+    # fig_3a_der_all(df)
 
     plt.tight_layout()
     plt.subplots_adjust(hspace=.0)
