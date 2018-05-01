@@ -790,7 +790,7 @@ def fig_2a(df, fluo, ind):
     for img_time in img_times:
         axs[1].axvline(x=img_time / 60, color='b', lw=1, alpha=0.6)
     axs[1].set_ylabel('Activity')
-    axs[1].set_xlabel('Time (hr)')
+    axs[1].set_xlabel('Time (h)')
     axs[1].set_yticks([0, 0.25, 0.5, 0.75, 1])
 
     plt.tight_layout()
@@ -802,7 +802,9 @@ def fig_2_sim():
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
     img_dir = img_dir.joinpath('sim_analysis.svg')
 
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 5))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(6.4, 3.3))
+
+    force_max_time = 5 + 30 / 60
 
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
@@ -837,22 +839,25 @@ def fig_2_sim():
         casp_plot = {fluo: [] for fluo in fluorophores}
         for fluo in fluorophores:
             if (fluo == 'TFP' and cc == 5E5) or (fluo == 'YFP' and cc == 5E7):
-                axs[0].plot(time, model[fluo + '_r_from_i'][0], color='k')
-                axs[0].axvline(x=model[fluo + '_max_activity'][0] / 60, color='k', ls='--', lw=2, alpha=0.6)
+                dif_time = force_max_time - model[fluo + '_max_activity'][0] / 60
+                this_time = time + dif_time
+
+                axs[0].plot(this_time, model[fluo + '_r_from_i'][0], color='k')
+                axs[0].axvline(x=force_max_time, color='k', ls='--', lw=2, alpha=0.6)
                 axs[0].set_ylabel('Anisotropy')
 
                 # casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
                 #             color=Colors[fluo], label='Activity')
-                last2 = axs[1].plot(time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
+                last2 = axs[1].plot(this_time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
                                        color='k', label='Derivative')
-                axs[1].axvline(x=model[fluo + '_max_activity'][0]/60, color='k', ls='--', lw=2, alpha=0.6)
-                max_time = real_vals[fluo + '_max_activity'][0] / 60
+                axs[1].axvline(x=force_max_time, color='k', ls='--', lw=2, alpha=0.6)
+                # max_time = real_vals[fluo + '_max_activity'][0] / 60
                 dx = 0.12
                 dy = 0.06
-                axs[1].arrow(max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc='k', ec='k',
+                axs[1].arrow(force_max_time-dx, 1+dy, dx, -dy, head_width=0.05, head_length=0.15, fc='k', ec='k',
                              length_includes_head=True)
-                axs[1].set_ylabel('Derivative')
-                axs[1].set_xlabel('Time (hr)')
+                axs[1].set_ylabel('Activity')
+                axs[1].set_xlabel('Time (h)')
                 axs[1].set_ylim([-0.01, 1.15])
 
     plt.xlim(2, 10)
