@@ -406,7 +406,12 @@ def plot_comparison_from_df(df, savename, height=None):
 
     if height is None:
         height = len(df) * 0.25
+
+    df_nomodif = df.query('file.str.contains("no modification")', engine='python')
+    df = df.drop(df_nomodif.index[0])
+
     df = df.sort_values(by='bin_5_mean', ascending=False)
+    df = df.append(df_nomodif, ignore_index=True)
     plt.figure(figsize=(3.2, height))
     # color_dict = {'4': 'g', '5': 'r', '6': 'b'}
     color_dict = {'5': 'r'}
@@ -428,14 +433,23 @@ def classify_and_plot_comparison():
     df = df.dropna()
 
     df_q = df.query('file.str.contains("prop")', engine='python')
+
     df_nomodif = df.query('file.str.contains("redVarCs_earm10_nomodif")', engine='python')
     df_nomodif.set_value(df_nomodif.index[0], 'file', 'no modification')
+
     df_onlyXIAP = df.query('file.str.contains("earm10_varxiap_2_varxiapdeg_010")', engine='python')
-    name = '2' + ' | ' + '3' + ' | ' + '2'
-    name = '%.2f | %.2f | %.2f' % (np.log10(10 ** 2 / 10 ** 5),
+    name = '2' + ' | ' + '2' + ' | ' + '3'
+    name = '%.1f | %.1f | %.1f' % (np.log10(10 ** 2 / 10 ** 5),
                                    np.log10(200 / 200),
                                    np.log10(3000 / 3000))
     df_onlyXIAP.set_value(df_onlyXIAP.index[0], 'file', name)
+
+    df_lig_rec = df.query('file.str.contains("earm10_varligand_3_varrecep_2")', engine='python')
+    name = '5' + ' | ' + '3' + ' | ' + '3'
+    name = '%.1f | %.1f | %.1f' % (np.log10(10 ** 2 / 10 ** 5),
+                                   np.log10(1000 / 200),
+                                   np.log10(1000 / 3000))
+    df_lig_rec.set_value(df_lig_rec.index[0], 'file', name)
 
     for i in df_q.index:
         num = int(df_q.file[i].split('_')[-1])
@@ -455,7 +469,7 @@ def classify_and_plot_comparison():
             df_q.set_value(i, 'file', name)
 
     df_q = df_q.append(df_nomodif)
-    plot_comparison_from_df(df_q, 'proportionals')
+    plot_comparison_from_df(df_q, 'proportionals', height=7.5)
 
     df_q = df.query('file.str.contains("redVarCS1_")', engine='python')
 
@@ -470,13 +484,14 @@ def classify_and_plot_comparison():
             rec = seps[5]
             xia = seps[-1]
             name = xia + ' | ' + rec + ' | ' + lig
-            name = '%.2f | %.2f | %.2f' % (np.log10(10 ** float(xia) / 10 ** 5),
+            name = '%.1f | %.1f | %.1f' % (np.log10(10 ** float(xia) / 10 ** 5),
                                            np.log10(10 ** float(rec) / 200),
                                            np.log10(10 ** float(lig) / 3000))
             df_q.set_value(i, 'file', name)
 
     df_q = df_q.append(df_nomodif)
     df_q = df_q.append(df_onlyXIAP)
+    df_q = df_q.append(df_lig_rec)
     plot_comparison_from_df(df_q, 'redVarCs', height=7.5)
 
 
