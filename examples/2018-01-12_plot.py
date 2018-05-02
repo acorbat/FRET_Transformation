@@ -7,6 +7,7 @@ import seaborn as sns
 
 from scipy.ndimage import zoom
 from scipy.stats import gaussian_kde
+from scipy.interpolate import splrep, splev
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, zoomed_inset_axes, mark_inset
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
@@ -836,9 +837,12 @@ def fig_2_sim():
 
     force_max_time = 5 + 30 / 60
 
-    Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
+    Colors = {'YFP': 'r',
               'mKate': (240 / 255, 77 / 255, 35 / 255),
-              'TFP': (59 / 255, 198 / 255, 244 / 255)}
+              'TFP': 'b'}
+    likes = {'YFP': 'hiperbolic-like',
+              'mKate': (240 / 255, 77 / 255, 35 / 255),
+              'TFP': 'sigmoid-like'}
 
     fluo_to_cplx = {'YFP': 'SC9',
                     'mKate': 'SC8',
@@ -872,14 +876,24 @@ def fig_2_sim():
                 dif_time = force_max_time - model[fluo + '_max_activity'][0] / 60
                 this_time = time + dif_time
 
-                axs[0].plot(this_time, model[fluo + '_r_from_i'][0], color='k')
+                f = splrep(this_time, model[fluo + '_r_from_i'][0], k=3)
+                this_time_fine = np.arange(this_time[0], this_time[-1]+0.001, 1/60)
+                interp = splev(this_time_fine, f, der=0)
+                val_half = (ani_vals[fluo][1] + ani_vals[fluo][0]) / 2
+                ind_half = np.where(interp >= val_half)[0][0]
+                time_half = this_time_fine[ind_half]
+                val_half = interp[ind_half]
+
+                axs[0].plot(this_time, model[fluo + '_r_from_i'][0], color=Colors[fluo], label=likes[fluo])
+                axs[0].scatter(time_half, val_half, color=Colors[fluo], marker='*', s=100, edgecolors='k')
                 axs[0].axvline(x=force_max_time, color='k', ls='--', lw=2, alpha=0.6)
                 axs[0].set_ylabel('Anisotropy')
+                axs[0].legend(loc=2)
 
                 # casp_plot[fluo], = axs[1].plot(time, model[fluo_to_cplx[fluo]][0] / np.max(model[fluo_to_cplx[fluo]][0]),
                 #             color=Colors[fluo], label='Activity')
                 last2 = axs[1].plot(this_time, model[fluo + '_r_complex'][0] / np.max(model[fluo + '_r_complex'][0]),
-                                       color='k', label='Derivative')
+                                       color=Colors[fluo])
                 axs[1].axvline(x=force_max_time, color='k', ls='--', lw=2, alpha=0.6)
                 # max_time = real_vals[fluo + '_max_activity'][0] / 60
                 dx = 0.12
