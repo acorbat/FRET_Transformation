@@ -1196,7 +1196,10 @@ def fig_3c(df):
 
     df_fil = df_fil.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
 
-    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-20, 20), ylim=(-20, 20), size=3.3)
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df_fil, xlim=(-45, 25), ylim=(-10, 20), size=3.3)
+    # original size: xlim=(-20, 20), ylim=(-20, 20)
+    # fig 3D size : xlim=(-45, 25), ylim=(-10, 20)
+    # zoomed :xlim=(-10, 10), ylim=(-10, 10)
 
     sns.distplot(df_fil["TFP_to_YFP"], kde=False, bins=30, ax=g.ax_marg_x)
     sns.distplot(df_fil["TFP_to_mKate"], kde=False, bins=30, ax=g.ax_marg_y, vertical=True)
@@ -1259,6 +1262,11 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     color_dict = {'sim_mod': [[0 / 255, 0 / 255, 255 / 255], [140 / 255, 140 / 255, 255 / 255]],
                   'sim_ear': [[64 / 255, 2 / 255, 126 / 255], [146 / 255, 39 / 255, 252 / 255]],
                   'exp': [[226 / 255, 85 / 255, 8 / 255], [250 / 255, 155 / 255, 103 / 255]]}
+    labels = {
+        'sim_mod': 'Modified Model',
+        'sim_ear': 'EARM V1.0',
+        'exp': 'Observed'
+    }
     g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-45, 25), ylim=(-10, 20), size=3.3)
     for origin, this_df in df.groupby("origin"):
         if 'sim' in origin:
@@ -1269,8 +1277,11 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
             sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin][0], hist_kws={'normed': True})
 
         if 'sim' in origin:
-            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1,
-                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls), ax=g.ax_joint, shade_lowest=False)
+            cs = sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1,
+                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls),
+                        ax=g.ax_joint, shade_lowest=False)
+            cs.collections[-1].set_label(labels[origin])
+
         elif origin == 'exp':
             plt.sca(g.ax_joint)
             # times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
@@ -1288,18 +1299,21 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
             #             levels=[0.25, 0.5, 0.75, 0.9],
             #             cmap=cmap_dict[origin])
             this_df = this_df.query('TFP_to_YFP > -30 and TFP_to_YFP < 35 and TFP_to_mKate > -30 and TFP_to_mKate < 35')
-            sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1, clip=((-30, 35), (-30, 35)),
+            cs = sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1, clip=((-30, 35), (-30, 35)),
                         levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls),
                         ax=g.ax_joint, shade_lowest=False)
+            cs.collections[-1].set_label(labels[origin])
 
     onecasp_df = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/OneCasp/OneCasp_derivations_order05_filtered_corrected.pandas')
     onecasp_df = onecasp_df.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
-    sns.kdeplot(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], colors='grey', cmap=None, linestyles='dashed', alpha=0.4,
+    cs = sns.kdeplot(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], colors='grey', cmap=None, linestyles='dashed', alpha=0.4,
                 levels=get_levels_for_kde(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], my_lvls),
                 ax=g.ax_joint)
+    cs.collections[-1].set_label('Control')
 
     g.ax_joint.axvline(x=0, color='k', lw=1, ls='--', alpha=0.5)
     g.ax_joint.axhline(y=0, color='k', lw=1, ls='--', alpha=0.5)
+    plt.legend(loc=3, framealpha=0)
     # plot_2dhist(sim_times)
     # plot_show()
     # plot_data(exp_times)
