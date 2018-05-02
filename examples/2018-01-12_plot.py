@@ -444,9 +444,9 @@ def classify_and_plot_comparison():
                                    np.log10(3000 / 3000))
     df_onlyXIAP.set_value(df_onlyXIAP.index[0], 'file', name)
 
-    df_lig_rec = df.query('file.str.contains("earm10_varligand_3_varrecep_2")', engine='python')
+    df_lig_rec = df.query('file == "earm10_varligand_3_varrecep_3"', engine='python')
     name = '5' + ' | ' + '3' + ' | ' + '3'
-    name = '%.1f | %.1f | %.1f' % (np.log10(10 ** 2 / 10 ** 5),
+    name = '%.1f | %.1f | %.1f' % (np.log10(10 ** 5 / 10 ** 5),
                                    np.log10(1000 / 200),
                                    np.log10(1000 / 3000))
     df_lig_rec.set_value(df_lig_rec.index[0], 'file', name)
@@ -1294,6 +1294,99 @@ def fig_3d(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
     labels = {
         'sim_mod': 'Modified Model',
         'sim_ear': 'EARM V1.0',
+        'exp': 'Observed'
+    }
+    g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-45, 25), ylim=(-10, 20), size=3.3)
+    for origin, this_df in df.groupby("origin"):
+        if 'sim' in origin:
+            sns.kdeplot(this_df["TFP_to_YFP"], shade=True, ax=g.ax_marg_x, color=color_dict[origin][0])
+            sns.kdeplot(this_df["TFP_to_mKate"], shade=True, ax=g.ax_marg_y, vertical=True, color=color_dict[origin][0])
+        elif origin == 'exp':
+            sns.distplot(this_df["TFP_to_YFP"], bins=50, kde=False, ax=g.ax_marg_x, color=color_dict[origin][0], hist_kws={'normed': True})
+            sns.distplot(this_df["TFP_to_mKate"], bins=50, kde=False, ax=g.ax_marg_y, vertical=True, color=color_dict[origin][0], hist_kws={'normed': True})
+
+        if 'sim' in origin:
+            cs = sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1,
+                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls),
+                        ax=g.ax_joint, shade_lowest=False)
+            cs.collections[-1].set_label(labels[origin])
+
+        elif origin == 'exp':
+            plt.sca(g.ax_joint)
+            # times = (this_df["TFP_to_YFP"], this_df["TFP_to_mKate"])
+            # times = (times[0][np.isfinite(times[0])], times[1][np.isfinite(times[1])])
+            # hist, centers_x, centers_y = np.histogram2d(times[0], times[1], range=[[-30, 35], [-30, 35]],
+            #                                             bins=np.arange(-30, 36,
+            #                                                            5))  # mass_histogram(times, interp=True)
+            # # centers_x = (centers_x[:-1] + centers_x[1:])/2
+            # # centers_y = (centers_y[:-1] + centers_y[1:])/2
+            #
+            # hist = zoom(hist, 4, order=3)
+            # max_count = np.max(hist)
+            # hist = hist / max_count
+            # plt.contour(hist.T, extent=(centers_x[0], centers_x[-1], centers_y[0], centers_y[-1]),
+            #             levels=[0.25, 0.5, 0.75, 0.9],
+            #             cmap=cmap_dict[origin])
+            this_df = this_df.query('TFP_to_YFP > -30 and TFP_to_YFP < 35 and TFP_to_mKate > -30 and TFP_to_mKate < 35')
+            cs = sns.kdeplot(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], colors=color_dict[origin], cmap=None, alpha=1, clip=((-30, 35), (-30, 35)),
+                        levels=get_levels_for_kde(this_df["TFP_to_YFP"], this_df["TFP_to_mKate"], my_lvls),
+                        ax=g.ax_joint, shade_lowest=False)
+            cs.collections[-1].set_label(labels[origin])
+
+    onecasp_df = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/OneCasp/OneCasp_derivations_order05_filtered_corrected.pandas')
+    onecasp_df = onecasp_df.query('TFP_to_YFP < 20 and TFP_to_YFP >-20 and TFP_to_mKate < 20 and TFP_to_mKate > -20')
+    cs = sns.kdeplot(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], colors='grey', cmap=None, linestyles='dashed', alpha=0.4,
+                levels=get_levels_for_kde(onecasp_df["TFP_to_YFP"], onecasp_df["TFP_to_mKate"], my_lvls),
+                ax=g.ax_joint)
+    cs.collections[-1].set_label('Control')
+
+    g.ax_joint.axvline(x=0, color='k', lw=1, ls='--', alpha=0.5)
+    g.ax_joint.axhline(y=0, color='k', lw=1, ls='--', alpha=0.5)
+    plt.legend(loc=3, framealpha=0)
+    # plot_2dhist(sim_times)
+    # plot_show()
+    # plot_data(exp_times)
+    # plt.scatter(exp_times[:, 0], exp_times[:, 1], alpha=0.1, color='r')
+    g.set_axis_labels('$\Delta$t (Cas3-b, Cas9-y) (min.)', '$\Delta$t (Cas3-b, Cas8-r) (min.)')
+    g.ax_marg_x.set_xlabel('')
+    g.ax_marg_y.set_ylabel('')
+    g.ax_marg_x.legend_.remove()
+    g.ax_marg_y.legend_.remove()
+    plt.tight_layout()
+    plt.savefig(str(img_dir), format='svg')
+    # plt.close()
+
+
+def fig_sup_3(filename='2017-10-16_complex_noErode_order05_filtered_derived'):
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    img_dir = img_dir.joinpath('sup_fig_3.svg')
+
+    cov = np.array([[27.4241789, 2.48916841], [2.48916841, 21.80573026]])
+
+    fluorophores = ['YFP', 'mKate', 'TFP']
+    my_lvls = [0.34, 0.68]
+    exp_data = pd.read_pickle('/mnt/data/Laboratorio/Imaging three sensors/2017-09-04_Images/' + filename + '.pandas')
+    exp_data = exp_data.query('Content == "TNF alpha"')
+    mask = [all([exp_data[fluo + '_good_der'][i] for fluo in fluorophores]) for i in exp_data.index]
+    exp_times = exp_data.TFP_to_YFP.values[mask], exp_data.TFP_to_mKate.values[mask]
+    exp_times = np.asarray(exp_times).T
+
+    sim_mod_data = load_sim(filename='redVarCs_earm10_varligand_3_varrecep_3')
+    sim_mod_times = np.asarray((sim_mod_data.TFP_to_YFP.values, sim_mod_data.TFP_to_mKate.values)).T
+    sim_mod_times += np.random.multivariate_normal([0, 0], cov*0.75, sim_mod_times.shape[0])
+
+    df = pd.DataFrame(exp_times, columns=['TFP_to_YFP', 'TFP_to_mKate'])
+    df['origin'] = 'exp'
+    df_sim_mod = pd.DataFrame(sim_mod_times, columns=['TFP_to_YFP', 'TFP_to_mKate'])
+    df_sim_mod['origin'] = 'sim_mod'
+    df_sim_mod = df_sim_mod.dropna(axis=0, how='any')
+
+    df = df.append(df_sim_mod)
+
+    color_dict = {'sim_mod': [[0 / 255, 0 / 255, 255 / 255], [140 / 255, 140 / 255, 255 / 255]],
+                  'exp': [[226 / 255, 85 / 255, 8 / 255], [250 / 255, 155 / 255, 103 / 255]]}
+    labels = {
+        'sim_mod': 'Modified Model',
         'exp': 'Observed'
     }
     g = sns.JointGrid("TFP_to_YFP", "TFP_to_mKate", df, xlim=(-45, 25), ylim=(-10, 20), size=3.3)
