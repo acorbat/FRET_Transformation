@@ -12,6 +12,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes, zoomed_inset_axes,
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
+from img_manager import tifffile as tif
+
 from fret_transformation import anisotropy_functions as af
 from fret_transformation import transformation as tf
 from fret_transformation import caspase_model as cm
@@ -790,6 +792,71 @@ def pdf_best_curves():
         plt.close()
 
     pp.close()
+
+
+def fig_2_cells():
+    sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
+    sav_dir = sav_dir.joinpath('cell_imgs.svg')
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/Klauss/Casp3_YFP_20130214_po007_f_crop/')
+    f_dir = img_dir.joinpath('Casp3_YFP_20130214_po007_f_crop.tif')
+    r_dir = img_dir.joinpath('Casp3_YFP_20130214_po007_r_crop.tif')
+    m_dir = img_dir.joinpath('masks.tif')
+
+    f_imgs = tif.TiffFile(str(f_dir))
+    f_series = f_imgs.asarray()
+    r_imgs = tif.TiffFile(str(r_dir))
+    r_series = r_imgs.asarray()
+    m_imgs = tif.TiffFile(str(m_dir))
+    masks = m_imgs.asarray()
+
+    inds = [0, 22, 23, 24, 40]
+    titles = {
+        0  : '0 h',
+        22 : '6 h',
+        23 : '6 h 15 min',
+        24 : '6 h 30 min',
+        40 : '10 h'
+    }
+    fig, axs = plt.subplots(2, 5, figsize=(6.4, 2.2))
+    plt.gcf().subplots_adjust(left=0.01, right=.9)
+
+    for i, ind in enumerate(inds):
+        img = f_series[ind]
+        img[masks[ind] > 125] = 0
+        im1 = axs[0][i].imshow(img, vmin=0.026, vmax=0.23, cmap='plasma')
+        axs[0][i].set_title(titles[ind])
+        axs[0][i].axis('off')
+
+        img = r_series[ind]
+        img[masks[ind] > 125] = 0
+        im2 = axs[1][i].imshow(img, vmin=0.20, vmax=0.33, cmap='seismic')
+        axs[1][i].axis('off')
+
+    cax = inset_axes(axs[0][4],
+                     width="7%",
+                     height="100%",
+                     bbox_transform=axs[0][4].transAxes,
+                     bbox_to_anchor=(0.2, 0.1, 1, 1),
+                     loc=1)
+    norm = matplotlib.colors.Normalize(vmin=0.026, vmax=0.23)
+    cb1 = matplotlib.colorbar.ColorbarBase(cax,
+                              cmap=matplotlib.cm.plasma, norm=norm,
+                              orientation='vertical')
+    cb1.set_ticks([0.05, 0.10, 0.15, 0.20, 0.25])
+
+    cax = inset_axes(axs[1][4],
+                     width="7%",
+                     height="100%",
+                     bbox_transform=axs[1][4].transAxes,
+                     bbox_to_anchor=(0.2, 0.1, 1, 1),
+                     loc=1)
+    norm = matplotlib.colors.Normalize(vmin=0.20, vmax=0.33)
+    cb1 = matplotlib.colorbar.ColorbarBase(cax,
+                                           cmap=matplotlib.cm.seismic, norm=norm,
+                                           orientation='vertical')
+    cb1.set_ticks([0.21, 0.26, 0.31])
+    plt.subplots_adjust(hspace=-.1, wspace=0.1)
+    plt.savefig(str(sav_dir), format='svg')
 
 
 def fig_2a(df, fluo, ind):
