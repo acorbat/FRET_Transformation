@@ -1654,3 +1654,53 @@ def fig_sup_pairtimes(df, name):
 
     fig = sns.pairplot(df, size=5, kind='reg')
     fig.savefig(str(img_dir))
+
+
+def fig_sup_1a():
+    sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    sav_dir = sav_dir.joinpath('timelapse_example.svg')
+
+    def full_img(timepoint, fluorophores=['TFP', 'mKate', 'YFP']):
+        imgs = {fluo: [] for fluo in fluorophores}
+        img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/AnisoTestData/results/Anisotropy/pos030/')
+        for fluo in fluorophores:
+            filename = '030_%03.f_r_%s.tif' % (timepoint, fluo)
+            this_img_dir = img_dir.joinpath(filename)
+            this_img = tif.TiffFile(str(this_img_dir)).asarray()
+            imgs[fluo] = this_img
+
+        return imgs
+
+    fig = plt.figure(figsize=(6.4, 2.5))
+    axs = plt.gca()
+    axs.axis('off')
+
+    imgs = {}
+    imgs['ini'] = full_img(2)
+    imgs['end'] = full_img(51)
+
+    pos = {}
+    pos['ini'] = np.asarray([-.55, .1, 1, 1])
+    pos['end'] = np.asarray([.15, .1, 1, 1])
+
+    rect = {}
+    rect['xy_ini'] = (1120, 260)
+    rect['height_ini'] = 180
+    rect['width_ini'] = 180
+    rect['xy_end'] = (1170, 270)
+    rect['height_end'] = 110
+    rect['width_end'] = 150
+
+    for this_time in ['ini', 'end']:
+        pos_dif = np.asarray([-.08, -.2, 0, 0])
+
+        for k, fluo in enumerate(fluorophores):
+            inset_axes(axs, width='40%', height='70%', bbox_to_anchor=pos[this_time] + k * pos_dif,
+                       bbox_transform=axs.transAxes)
+            axs_in = plt.gca()
+            axs_in.tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
+            axs_in.imshow(imgs[this_time][fluo], cmap='plasma')
+            rect_plot = matplotlib.patches.Rectangle(rect['xy_' + this_time], rect['width_' + this_time],
+                                                     rect['height_' + this_time], fc=(1, 1, 0, 0), ec=(1, 0, 0, 1),
+                                                     lw=3)
+            axs_in.add_patch(rect_plot)
