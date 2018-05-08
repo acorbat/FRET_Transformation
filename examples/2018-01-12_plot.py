@@ -1656,20 +1656,21 @@ def fig_sup_pairtimes(df, name):
     fig.savefig(str(img_dir))
 
 
+def full_img(timepoint, kind='r', fluorophores=['TFP', 'mKate', 'YFP']):
+    imgs = {fluo: [] for fluo in fluorophores}
+    img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/AnisoTestData/results/Anisotropy/pos030/')
+    for fluo in fluorophores:
+        filename = '030_%03.f_%s_%s.tif' % (timepoint, kind, fluo)
+        this_img_dir = img_dir.joinpath(filename)
+        this_img = tif.TiffFile(str(this_img_dir)).asarray()
+        imgs[fluo] = this_img
+
+    return imgs
+
+
 def fig_sup_1a():
     sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
     sav_dir = sav_dir.joinpath('timelapse_example.svg')
-
-    def full_img(timepoint, fluorophores=['TFP', 'mKate', 'YFP']):
-        imgs = {fluo: [] for fluo in fluorophores}
-        img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/AnisoTestData/results/Anisotropy/pos030/')
-        for fluo in fluorophores:
-            filename = '030_%03.f_r_%s.tif' % (timepoint, fluo)
-            this_img_dir = img_dir.joinpath(filename)
-            this_img = tif.TiffFile(str(this_img_dir)).asarray()
-            imgs[fluo] = this_img
-
-        return imgs
 
     fig = plt.figure(figsize=(6.4, 2.5))
     axs = plt.gca()
@@ -1704,3 +1705,97 @@ def fig_sup_1a():
                                                      rect['height_' + this_time], fc=(1, 1, 0, 0), ec=(1, 0, 0, 1),
                                                      lw=3)
             axs_in.add_patch(rect_plot)
+
+    plt.savefig(str(sav_dir), format='svg')
+
+
+def fig_sup_1b():
+    sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    sav_dir = sav_dir.joinpath('sensors_example.svg')
+
+    imgs_r = {}
+    imgs_r['ini'] = full_img(4)
+    imgs_r['end'] = full_img(50)
+    imgs_f = {}
+    imgs_f['ini'] = full_img(4)
+    imgs_f['end'] = full_img(50)
+
+    rect = {}
+    rect['xy_ini'] = (1120, 260)
+    rect['height_ini'] = 180
+    rect['width_ini'] = 180
+    rect['xy_end'] = (1200, 270)
+    rect['height_end'] = 110
+    rect['width_end'] = 110
+
+    titles = {'TFP': 'x-b', 'mKate': 'x-r', 'YFP': 'x-y'}
+    Colors = {'TFP': 'Blues_r', 'mKate': 'Reds_r', 'YFP': 'Purples_r'}
+
+    f_min = 0.06
+    f_max = 0.5
+    r_min = 0.17
+    r_max = 0.36
+
+    fig, axs = plt.subplots(4, 3, figsize=(6.4, 6.4))
+    # plt.gcf().subplots_adjust(left=0.01, right=.9)
+
+    for n, fluo in enumerate(fluorophores):
+        for j, this_time in enumerate(['ini', 'end']):
+            j *= 2
+            img = imgs_f[this_time][fluo]
+            crop_loc = (rect['xy_' + this_time][0],
+                        rect['xy_' + this_time][0] + rect['width_' + this_time],
+                        rect['xy_' + this_time][1],
+                        rect['xy_' + this_time][1] + rect['height_' + this_time])
+            img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
+            im_f = axs[j][n].imshow(img, vmin=f_min, vmax=f_max, cmap=Colors[fluo])
+
+            if j == 0:
+                axs[j][n].set_title(titles[fluo])
+                if n == 1:
+                    axs[j][n].set_title('Initial\n' + titles[fluo])
+            if j == 2 and n == 1:
+                axs[j][n].set_title('Final')
+            if n == 0:
+                axs[j][n].set_ylabel('Fluorescence\n Intensity (a.u.)')
+            axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
+
+            cax = inset_axes(axs[j][n],
+                             width="7%",
+                             height="100%",
+                             bbox_transform=axs[j][n].transAxes,
+                             bbox_to_anchor=(0.2, .05, 1, 1),
+                             loc=1)
+            norm = matplotlib.colors.Normalize(vmin=f_min, vmax=f_max)
+            cb1 = matplotlib.colorbar.ColorbarBase(cax,
+                                                   cmap=Colors[fluo], norm=norm,
+                                                   orientation='vertical')
+            cb1.set_ticks([0.1, 0.2, 0.3, 0.4, 0.5])
+
+            j += 1
+            img = imgs_r[this_time][fluo]
+            crop_loc = (rect['xy_' + this_time][0],
+                        rect['xy_' + this_time][0] + rect['width_' + this_time],
+                        rect['xy_' + this_time][1],
+                        rect['xy_' + this_time][1] + rect['height_' + this_time])
+            img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
+            im_r = axs[j][n].imshow(img, vmin=r_min, vmax=r_max, cmap='plasma')
+            if n == 0:
+                axs[j][n].set_ylabel('Anisotropy')
+            axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
+
+            cax = inset_axes(axs[j][n],
+                             width="7%",
+                             height="100%",
+                             bbox_transform=axs[j][n].transAxes,
+                             bbox_to_anchor=(0.2, .05, 1, 1),
+                             loc=1)
+            norm = matplotlib.colors.Normalize(vmin=r_min, vmax=r_max)
+            cb1 = matplotlib.colorbar.ColorbarBase(cax,
+                                                   cmap='plasma', norm=norm,
+                                                   orientation='vertical')
+            cb1.set_ticks([0.20, 0.23, 0.26, 0.29, 0.33])
+
+    # plt.subplots_adjust(hspace=-.1, wspace=0.1)
+    plt.savefig(str(sav_dir), format='svg')
+
