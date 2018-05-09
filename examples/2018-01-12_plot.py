@@ -1700,7 +1700,8 @@ def fig_sup_1a():
                        bbox_transform=axs.transAxes)
             axs_in = plt.gca()
             axs_in.tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
-            axs_in.imshow(imgs[this_time][fluo], cmap='plasma')
+            img = np.nan_to_num(imgs[this_time][fluo])
+            axs_in.imshow(img, cmap='plasma', vmin=0.17, vmax=0.36)
             rect_plot = matplotlib.patches.Rectangle(rect['xy_' + this_time], rect['width_' + this_time],
                                                      rect['height_' + this_time], fc=(1, 1, 0, 0), ec=(1, 0, 0, 1),
                                                      lw=3)
@@ -1748,6 +1749,7 @@ def fig_sup_1b():
                         rect['xy_' + this_time][1],
                         rect['xy_' + this_time][1] + rect['height_' + this_time])
             img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
+            img = np.nan_to_num(img)
             im_f = axs[j][n].imshow(img, vmin=f_min, vmax=f_max, cmap=Colors[fluo])
 
             if j == 0:
@@ -1779,6 +1781,7 @@ def fig_sup_1b():
                         rect['xy_' + this_time][1],
                         rect['xy_' + this_time][1] + rect['height_' + this_time])
             img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
+            img = np.nan_to_num(img)
             im_r = axs[j][n].imshow(img, vmin=r_min, vmax=r_max, cmap='plasma')
             if n == 0:
                 axs[j][n].set_ylabel('Anisotropy')
@@ -1798,4 +1801,3 @@ def fig_sup_1b():
 
     # plt.subplots_adjust(hspace=-.1, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
-
