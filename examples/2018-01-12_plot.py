@@ -1801,3 +1801,134 @@ def fig_sup_1b():
 
     # plt.subplots_adjust(hspace=-.1, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
+
+
+def plot_homo_anisotropies(ax, data, constructs, color=None):
+    selected = data.loc[data['construct'].isin(constructs)]
+    names_monomers = selected.query('mer.str.contains("monomer")').construct.values
+    names_dimers = selected.query('mer.str.contains("dimer")').construct.values
+    r_monomers = selected.query('mer.str.contains("monomer")').anisotropy.values
+    r_dimers = selected.query('mer.str.contains("dimer")').anisotropy.values
+
+    if color is None:
+        color_mono = 'b'
+        color_di = 'r'
+    elif color == 'yellows':
+        color_mono = (175 / 255, 192 / 255, 69 / 255)
+        color_di = (200 / 255, 216 / 255, 127 / 255)
+    elif color == 'blues':
+        color_mono = (82 / 255, 186 / 255, 221 / 255)
+        color_di = (50 / 255, 116 / 255, 161 / 255)
+    elif color == 'reds':
+        color_mono = (214 / 255, 92 / 255, 61 / 255)
+        color_di = (224 / 255, 131 / 255, 108 / 255)
+
+    index = np.arange(len(selected)/2)
+    bar_width = 0.25
+
+    rects1 = ax.bar(index, r_dimers, bar_width,
+                    color=color_di, edgecolor='k',
+                    label='dimer')
+
+    rects2 = ax.bar(index + bar_width, r_monomers, bar_width,
+                    color=color_mono, edgecolor='k',
+                    label='monomer')
+
+    for rects in [rects1, rects2]:
+        for bar in rects:
+            bar.set_edgecolor("k")
+            bar.set_linewidth(1.5)
+
+    ax.set_ylabel('Anisotropy')
+    xticks = np.concatenate((index, index + bar_width))
+    # xticks.sort()
+    ax.set_xticks(xticks)
+    xticklabels = np.concatenate((names_dimers, names_monomers))
+    ax.set_xticklabels(xticklabels, rotation=30, ha='right',)
+    ax.legend(loc=4)
+
+
+def plot_hetero_anisotropies(ax, data, constructs, color=None):
+    names_dimers = list(constructs)
+    names_monomers = [(name.split('_')[0], name.split('_')[2]) for name in constructs]
+    r_monomers_1 = [data[data.construct == name[0]].anisotropy.values[0] for name in names_monomers]
+    r_monomers_2 = [data[data.construct == name[1]].anisotropy.values[0] for name in names_monomers]
+
+    r_dimers_1 = []
+    r_dimers_2 = []
+    xticklabels_dimers_1 = []
+    xticklabels_dimers_2 = []
+    for name in names_dimers:
+        this = data.query('construct.str.contains("' + name + '")')
+
+        r_dimers_1.append(data.loc[this.index[0]].anisotropy)
+        xticklabels_dimers_1.append(data.loc[this.index[0]].construct + ' (' + data.loc[this.index[0]]['filter'] + ')')
+        r_dimers_2.append(data.loc[this.index[1]].anisotropy)
+        xticklabels_dimers_2.append(data.loc[this.index[1]].construct + ' (' + data.loc[this.index[1]]['filter'] + ')')
+
+    if color is None:
+        color_mono = 'b'
+        color_di = 'r'
+    elif color == 'yellows':
+        color_mono = (175 / 255, 192 / 255, 69 / 255)
+        color_di = (200 / 255, 216 / 255, 127 / 255)
+    elif color == 'blues':
+        color_mono = (82 / 255, 186 / 255, 221 / 255)
+        color_di = (50 / 255, 116 / 255, 161 / 255)
+    elif color == 'reds':
+        color_mono = (214 / 255, 92 / 255, 61 / 255)
+        color_di = (224 / 255, 131 / 255, 108 / 255)
+
+    index = np.arange(len(names_dimers))
+    bar_width = 0.15
+
+    rects1 = ax.bar(index, r_dimers_1, bar_width,
+                    color=color_di,
+                    label='dimer')
+    rects2 = ax.bar(index + bar_width, r_dimers_2, bar_width,
+                    color=color_di)
+
+    rects3 = ax.bar(index + 2 * bar_width, r_monomers_1, bar_width,
+                    color=color_mono,
+                    label='monomer')
+
+    rects4 = ax.bar(index + 3 * bar_width, r_monomers_2, bar_width,
+                    color=color_mono)
+
+    for rects in [rects1, rects2, rects3, rects4]:
+        for bar in rects:
+            bar.set_edgecolor("k")
+            bar.set_linewidth(1.5)
+
+    ax.set_ylabel('Anisotropy')
+    xticks = np.concatenate((index, index + bar_width, index + 2 * bar_width, index + 3 * bar_width))
+    ax.set_xticks(xticks)
+    xticklabels = xticklabels_dimers_1 + xticklabels_dimers_2
+    xticklabels = xticklabels + [name[0] for name in names_monomers] + [name[1] for name in names_monomers]
+    ax.set_xticklabels(xticklabels, rotation=35, ha='right')
+    ax.legend(loc=4)
+
+
+def fig_sup_2():
+    sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
+    sav_dir = sav_dir.joinpath('constructs_anisotropy.svg')
+
+    data_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/constructs/')
+    data_dir = data_dir.joinpath('constructs_anisotropy_org.pandas')
+    data = pd.read_pickle(str(data_dir))
+
+    blues = ['mCitrine', 'mCitrine_Cas3_mCitrine', 'TFP', 'TFP_cas3_TFP', 'EGFP', 'EGFP_LINK_EGFP',
+             'Citd', 'Citd_LINK_CitD', 'CKA', 'CKA_G12V_CKA', 'Ewd', 'Ewd_LINK_Ewd']
+    reds = ['TagRFP', 'TagRFP_LINK_TagRFP', 'mKate2', 'mKate2_short_mKate2', 'KO', 'KO_LINK_KO', 'KO2',
+            'KO2_LINK_KO2', 'mCherry', 'mCherry_LINK_mCherry']
+    hetero_blues = set([data.construct[i] for i in data.index if data['filter'][i] is not None])
+
+    fig, axs = plt.subplots(3, 1, figsize=(6.4, 6.4))
+
+    plot_homo_anisotropies(axs[0], data, blues, color='yellows')
+    plot_homo_anisotropies(axs[1], data, reds, color='reds')
+    plot_hetero_anisotropies(axs[2], data, hetero_blues, color='blues')
+
+    fig.tight_layout()
+
+    plt.savefig(str(sav_dir), format='svg')
