@@ -1880,7 +1880,7 @@ def plot_hetero_anisotropies(ax, data, constructs, color=None):
         color_di = (224 / 255, 131 / 255, 108 / 255)
 
     index = np.arange(len(names_dimers))
-    bar_width = 0.15
+    bar_width = 0.20
 
     rects1 = ax.bar(index, r_dimers_1, bar_width,
                     color=color_di,
