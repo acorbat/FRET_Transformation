@@ -823,13 +823,17 @@ def fig_2_cells():
     for i, ind in enumerate(inds):
         img = f_series[ind]
         img[masks[ind] > 125] = 0
-        im1 = axs[0][i].imshow(img, vmin=0.026, vmax=0.23, cmap='plasma')
+        cmap = plt.cm.Blues_r
+        cmap.set_under(color='black')
+        im1 = axs[0][i].imshow(img, vmin=0.026, vmax=0.23, cmap=cmap)
         axs[0][i].set_title(titles[ind])
         axs[0][i].axis('off')
+        axs[0][0].set_ylabel('Fluorescence Intensity')
+        axs[1][0].set_ylabel('Anisotropy')
 
         img = r_series[ind]
         img[masks[ind] > 125] = 0
-        im2 = axs[1][i].imshow(img, vmin=0.20, vmax=0.33, cmap='seismic')
+        im2 = axs[1][i].imshow(img, vmin=0.20, vmax=0.33, cmap='plasma')
         axs[1][i].axis('off')
 
     cax = inset_axes(axs[0][4],
@@ -840,7 +844,7 @@ def fig_2_cells():
                      loc=1)
     norm = matplotlib.colors.Normalize(vmin=0.026, vmax=0.23)
     cb1 = matplotlib.colorbar.ColorbarBase(cax,
-                              cmap=matplotlib.cm.plasma, norm=norm,
+                              cmap=cmap, norm=norm,
                               orientation='vertical')
     cb1.set_ticks([0.05, 0.10, 0.15, 0.20, 0.25])
 
@@ -852,7 +856,7 @@ def fig_2_cells():
                      loc=1)
     norm = matplotlib.colors.Normalize(vmin=0.20, vmax=0.33)
     cb1 = matplotlib.colorbar.ColorbarBase(cax,
-                                           cmap=matplotlib.cm.seismic, norm=norm,
+                                           cmap=matplotlib.cm.plasma, norm=norm,
                                            orientation='vertical')
     cb1.set_ticks([0.21, 0.26, 0.31])
     plt.subplots_adjust(hspace=-.1, wspace=0.1)
@@ -1710,9 +1714,20 @@ def fig_sup_1a():
     plt.savefig(str(sav_dir), format='svg')
 
 
-def fig_sup_1b():
+def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
     sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
     sav_dir = sav_dir.joinpath('sensors_example.svg')
+
+    mask_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/AnisoTestData/results/Regions/')
+    mask = {}
+    for t in [4, 50]:
+        filename = '030_%03.f_%s_%s.tif' % (t, 'f', 'YFP')
+        this_mask_dir = mask_dir.joinpath(filename)
+        this_mask = tif.TiffFile(str(this_mask_dir)).asarray()
+        mask[t] = this_mask
+
+    mask[4] = mask[4] != 11
+    mask[50] = mask[50] != 9
 
     imgs_r = {}
     imgs_r['ini'] = full_img(4)
@@ -1720,6 +1735,11 @@ def fig_sup_1b():
     imgs_f = {}
     imgs_f['ini'] = full_img(4)
     imgs_f['end'] = full_img(50)
+    for fluo in fluorophores:
+        imgs_r['ini'][fluo][[mask[4]]] = 0
+        imgs_r['end'][fluo][[mask[50]]] = 0
+        imgs_f['ini'][fluo][[mask[4]]] = 0
+        imgs_f['end'][fluo][[mask[50]]] = 0
 
     rect = {}
     rect['xy_ini'] = (1120, 260)
@@ -1730,7 +1750,7 @@ def fig_sup_1b():
     rect['width_end'] = 110
 
     titles = {'TFP': 'x-b', 'mKate': 'x-r', 'YFP': 'x-y'}
-    Colors = {'TFP': 'Blues_r', 'mKate': 'Reds_r', 'YFP': 'Purples_r'}
+    Colors = {'TFP': plt.cm.Blues_r, 'mKate': plt.cm.Reds_r, 'YFP': plt.cm.Greens_r}
 
     f_min = 0.06
     f_max = 0.5
@@ -1750,14 +1770,16 @@ def fig_sup_1b():
                         rect['xy_' + this_time][1] + rect['height_' + this_time])
             img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
             img = np.nan_to_num(img)
-            im_f = axs[j][n].imshow(img, vmin=f_min, vmax=f_max, cmap=Colors[fluo])
+            cmap = Colors[fluo]
+            cmap.set_under(color='black')
+            im_f = axs[j][n].imshow(img, vmin=f_min, vmax=f_max, cmap=cmap)
 
             if j == 0:
                 axs[j][n].set_title(titles[fluo])
                 if n == 1:
-                    axs[j][n].set_title('Initial\n' + titles[fluo])
+                    axs[j][n].set_title('pre\n' + titles[fluo])
             if j == 2 and n == 1:
-                axs[j][n].set_title('Final')
+                axs[j][n].set_title('pos')
             if n == 0:
                 axs[j][n].set_ylabel('Fluorescence\n Intensity (a.u.)')
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
@@ -1770,7 +1792,7 @@ def fig_sup_1b():
                              loc=1)
             norm = matplotlib.colors.Normalize(vmin=f_min, vmax=f_max)
             cb1 = matplotlib.colorbar.ColorbarBase(cax,
-                                                   cmap=Colors[fluo], norm=norm,
+                                                   cmap=cmap, norm=norm,
                                                    orientation='vertical')
             cb1.set_ticks([0.1, 0.2, 0.3, 0.4, 0.5])
 
@@ -1815,10 +1837,10 @@ def plot_homo_anisotropies(ax, data, constructs, color=None):
         color_di = 'r'
     elif color == 'yellows':
         color_mono = (175 / 255, 192 / 255, 69 / 255)
-        color_di = (200 / 255, 216 / 255, 127 / 255)
+        color_di = (255 / 255, 230 / 255, 128 / 255)
     elif color == 'blues':
         color_mono = (82 / 255, 186 / 255, 221 / 255)
-        color_di = (50 / 255, 116 / 255, 161 / 255)
+        color_di = (170 / 255, 238 / 255, 255 / 255)
     elif color == 'reds':
         color_mono = (214 / 255, 92 / 255, 61 / 255)
         color_di = (224 / 255, 131 / 255, 108 / 255)
@@ -1874,7 +1896,7 @@ def plot_hetero_anisotropies(ax, data, constructs, color=None):
         color_di = (200 / 255, 216 / 255, 127 / 255)
     elif color == 'blues':
         color_mono = (82 / 255, 186 / 255, 221 / 255)
-        color_di = (50 / 255, 116 / 255, 161 / 255)
+        color_di = (170 / 255, 238 / 255, 255 / 255)
     elif color == 'reds':
         color_mono = (214 / 255, 92 / 255, 61 / 255)
         color_di = (224 / 255, 131 / 255, 108 / 255)
