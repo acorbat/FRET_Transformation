@@ -1859,7 +1859,7 @@ def plot_homo_anisotropies(ax, data, constructs, color=None):
     if color == 'reds':
         new_index = index[-1] + 1
         new_index = [new_index + n * bar_width for n in range(3)]
-        new_constructs = ['mCherry', 'mKate2', 'mCherry_LINK_mKate2']
+        new_constructs = ['mCherry', 'mKate2', 'mCherry-mKate2']
         new_anis = [data[data.construct == constr].anisotropy.values[0] for constr in new_constructs]
         rects3 = ax.barh(new_index, new_anis, bar_width,
                          color=color_mono, edgecolor='k',
@@ -1887,7 +1887,7 @@ def plot_homo_anisotropies(ax, data, constructs, color=None):
 
 def plot_hetero_anisotropies(ax, data, constructs, color=None):
     names_dimers = list(constructs)
-    names_monomers = [(name.split('_')[0], name.split('_')[2]) for name in constructs]
+    names_monomers = [(name.split('-')[0], name.split('-')[1]) for name in constructs]
     r_monomers_1 = [data[data.construct == name[0]].anisotropy.values[0] for name in names_monomers]
     r_monomers_2 = [data[data.construct == name[1]].anisotropy.values[0] for name in names_monomers]
 
@@ -1953,15 +1953,14 @@ def fig_sup_2():
     data_dir = data_dir.joinpath('constructs_anisotropy_org.pandas')
     data = pd.read_pickle(str(data_dir))
 
-    blues = ['mCitrine', 'mCitrine_Cas3_mCitrine', 'TFP', 'TFP_cas3_TFP', 'EGFP', 'EGFP_LINK_EGFP',
-             'Citd', 'Citd_LINK_CitD', 'CKA', 'CKA_G12V_CKA', 'Ewd', 'Ewd_LINK_Ewd']
-    reds = ['TagRFP', 'TagRFP_LINK_TagRFP', 'mKate2', 'mKate2_short_mKate2', 'KO', 'KO_LINK_KO', 'KO2',
-            'KO2_LINK_KO2', 'mCherry', 'mCherry_LINK_mCherry']
+    yellows = ['mCitrine', 'mCitrine-mCitrine', 'TFP', 'TFP-TFP', 'EGFP', 'EGFP-EGFP']
+    reds = ['TagRFP', 'TagRFP-TagRFP', 'mKate2', 'mKate2-mKate2', 'KO', 'KO-KO', 'KO2',
+            'KO2-KO2', 'mCherry', 'mCherry-mCherry']
     hetero_blues = set([data.construct[i] for i in data.index if data['filter'][i] is not None])
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5))
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [3, 6, 7]})
 
-    plot_homo_anisotropies(axs[0], data, blues, color='yellows')
+    plot_homo_anisotropies(axs[0], data, yellows, color='yellows')
     plot_homo_anisotropies(axs[1], data, reds, color='reds')
     plot_hetero_anisotropies(axs[2], data, hetero_blues, color='blues')
     axs[0].set_title('Anisotropy')
