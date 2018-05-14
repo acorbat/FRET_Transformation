@@ -1873,7 +1873,6 @@ def plot_homo_anisotropies(ax, data, constructs, color=None):
             bar.set_edgecolor("k")
             bar.set_linewidth(1.5)
 
-    ax.set_title('Anisotropy')
     yticks = np.concatenate((index, index + bar_width))
     if color == 'reds':
         yticks = np.concatenate((index, index + bar_width, new_index))
@@ -1938,7 +1937,6 @@ def plot_hetero_anisotropies(ax, data, constructs, color=None):
             bar.set_edgecolor("k")
             bar.set_linewidth(1.5)
 
-    ax.set_title('Anisotropy')
     yticks = np.concatenate((index, index + bar_width, index + 2 * bar_width, index + 3 * bar_width))
     ax.set_yticks(yticks)
     yticklabels = yticklabels_dimers_1 + yticklabels_dimers_2
@@ -1961,12 +1959,13 @@ def fig_sup_2():
             'KO2_LINK_KO2', 'mCherry', 'mCherry_LINK_mCherry']
     hetero_blues = set([data.construct[i] for i in data.index if data['filter'][i] is not None])
 
-    fig, axs = plt.subplots(3, 1, figsize=(3.3, 8.5))
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5))
 
     plot_homo_anisotropies(axs[0], data, blues, color='yellows')
     plot_homo_anisotropies(axs[1], data, reds, color='reds')
     plot_hetero_anisotropies(axs[2], data, hetero_blues, color='blues')
+    axs[0].set_title('Anisotropy')
 
     fig.tight_layout()
-
+    plt.subplots_adjust(hspace=.0)
     plt.savefig(str(sav_dir), format='svg')
