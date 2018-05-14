@@ -813,8 +813,8 @@ def fig_2_cells():
     titles = {
         0  : '0 h',
         22 : '6 h',
-        23 : '6 h 15 min',
-        24 : '6 h 30 min',
+        23 : '6 h 30 min',
+        24 : '6 h 50 min',
         40 : '10 h'
     }
     fig, axs = plt.subplots(2, 5, figsize=(6.4, 2.2))
@@ -867,7 +867,7 @@ def fig_2a(df, fluo, ind):
     img_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_2/')
     img_dir = img_dir.joinpath('typical_analysis.svg')
 
-    img_times = [0, 6 * 60, 6 * 60 + 30, 6 * 60 + 45, 10 * 60]
+    img_times = [0, 6 * 60, 6 * 60 + 30, 6 * 60 + 50, 10 * 60]
 
     Colors = {'YFP': (189 / 255, 214 / 255, 48 / 255),
               'mKate': (240 / 255, 77 / 255, 35 / 255),
