@@ -535,6 +535,8 @@ def estimate_pre_and_post(df=None):
         df[fluo + '_pre_std'] = pre_stds
         df[fluo + '_pos_std'] = pos_stds
 
+    return df
+
 
 def anisos_pdf(df):
     Colors = {'YFP': 'y',
