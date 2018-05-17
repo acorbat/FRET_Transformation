@@ -840,7 +840,7 @@ def fig_2_cells():
                      width="7%",
                      height="100%",
                      bbox_transform=axs[0][4].transAxes,
-                     bbox_to_anchor=(0.2, 0.1, 1, 1),
+                     bbox_to_anchor=(0.2, 0.08, 1, 1),
                      loc=1)
     norm = matplotlib.colors.Normalize(vmin=0.026, vmax=0.23)
     cb1 = matplotlib.colorbar.ColorbarBase(cax,
@@ -852,7 +852,7 @@ def fig_2_cells():
                      width="7%",
                      height="100%",
                      bbox_transform=axs[1][4].transAxes,
-                     bbox_to_anchor=(0.2, 0.1, 1, 1),
+                     bbox_to_anchor=(0.2, 0.08, 1, 1),
                      loc=1)
     norm = matplotlib.colors.Normalize(vmin=0.20, vmax=0.33)
     cb1 = matplotlib.colorbar.ColorbarBase(cax,
@@ -911,7 +911,7 @@ def fig_2_sim():
     Colors = {'YFP': 'r',
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': 'b'}
-    likes = {'YFP': 'hiperbolic-like',
+    likes = {'YFP': 'hyperbolic-like',
               'mKate': (240 / 255, 77 / 255, 35 / 255),
               'TFP': 'sigmoid-like'}
 
