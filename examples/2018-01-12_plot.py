@@ -498,7 +498,7 @@ def classify_and_plot_comparison():
     plot_comparison_from_df(df_q, 'redVarCs', height=7.5)
 
 
-def estimate_pre_and_post(df=None):
+def estimate_pre_and_post(df=None, tp=10):
     if df is None:
         df = load_data()
     for fluo in fluorophores:
@@ -510,8 +510,8 @@ def estimate_pre_and_post(df=None):
         pos_stds = []
         for i in df.index:
             if df[fluo + '_good_der'][i]:
-                pre = tf.pre_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i])
-                pos = tf.post_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i])
+                pre = tf.pre_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i], timepoints=tp)
+                pos = tf.post_region(df[fluo + '_x0'][i], df[fluo + '_rate'][i], df[fluo + '_r_from_i'][i], timepoints=tp)
 
                 pres.append(pre)
                 poss.append(pos)
@@ -750,7 +750,7 @@ def fig_anisos_violin(df):
 
     plt.sca(axs[1])
     plt.ylim([0, 0.09])
-    plt.xticks([0, 1, 2], ['x-b', 'x-r', 'x-y'])
+    plt.xticks([0, 1, 2], ['x-b', 'x-y', 'x-r'])
     plt.ylabel('Difference')
     plt.xlabel('')
     plt.tight_layout()
