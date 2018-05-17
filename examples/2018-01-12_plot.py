@@ -1882,20 +1882,20 @@ def fig_sup_2():
     data_dir = data_dir.joinpath('constructs_anisotropy_org.pandas')
     data = pd.read_pickle(str(data_dir))
 
-    yellows = [('mCitrine', 'mCitrine-mCitrine'), ('TFP', 'TFP-TFP'), ('EGFP', 'EGFP-EGFP')]
-    reds = [('TagRFP', 'TagRFP-TagRFP'), ('mKate2', 'mKate2-mKate2'), ('KO', 'KO-KO'), ('KO2',  'KO2-KO2'),
-            ('mCherry', 'mCherry-mCherry'), ('mCherry', 'mKate2', 'mCherry-mKate2')]
-    hetero_blues = [('Cerulean', 'TagBFP', 'Cerulean-TagBFP'),
-                    ('TFP', 'TagBFP', 'TFP-TagBFP'),
+    hetero_blues = [('TagBFP', 'EBFP2', 'TagBFP-EBFP2'),
                     ('TagBFP', 'Cerulean', 'TagBFP-Cerulean'),
-                    ('TagBFP', 'EBFP2', 'TagBFP-EBFP2'),
-                    ('TagBFP', 'TFP', 'TagBFP-TFP')]
+                    ('Cerulean', 'TagBFP', 'Cerulean-TagBFP'),
+                    ('TagBFP', 'TFP', 'TagBFP-TFP'),
+                    ('TFP', 'TagBFP', 'TFP-TagBFP')]
+    yellows = [('TFP', 'TFP-TFP'), ('EGFP', 'EGFP-EGFP'), ('mCitrine', 'mCitrine-mCitrine')]
+    reds = [('KO', 'KO-KO'), ('KO2',  'KO2-KO2'), ('TagRFP', 'TagRFP-TagRFP'), ('mCherry', 'mCherry-mCherry'),
+            ('mKate2', 'mKate2-mKate2'), ('mCherry', 'mKate2', 'mCherry-mKate2')]
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [3, 6, 7]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [7, 3, 6]})
 
-    plot_anis_in_bars(axs[0], data, yellows, color='yellows')
-    plot_anis_in_bars(axs[1], data, reds, color='reds')
-    plot_anis_in_bars(axs[2], data, hetero_blues, color='blues')
+    plot_anis_in_bars(axs[0], data, hetero_blues, color='blues')
+    plot_anis_in_bars(axs[1], data, yellows, color='yellows')
+    plot_anis_in_bars(axs[2], data, reds, color='reds')
     axs[0].set_title('Anisotropy')
 
     fig.tight_layout()
