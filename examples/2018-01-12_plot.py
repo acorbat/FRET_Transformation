@@ -498,8 +498,9 @@ def classify_and_plot_comparison():
     plot_comparison_from_df(df_q, 'redVarCs', height=7.5)
 
 
-def estimate_pre_and_post():
-    df = load_data()
+def estimate_pre_and_post(df=None):
+    if df is None:
+        df = load_data()
     for fluo in fluorophores:
         pres = []
         poss = []
