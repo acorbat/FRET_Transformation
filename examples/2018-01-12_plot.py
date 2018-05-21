@@ -813,6 +813,9 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
 
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
 
+            if j == 0:
+                axs[j][n].set_title(titles[fluo])
+
             if n == 2:
                 cax = inset_axes(axs[j][n],
                                  width="7%",
@@ -833,7 +836,7 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
                                pad=0.1,
                                color='white',
                                frameon=False,
-                               size_vertical=1,
+                               size_vertical=2,
                                label_top=True)  # ,
     # fontproperties=fontprops)
 
@@ -948,6 +951,19 @@ def fig_2_cells():
                                            cmap=matplotlib.cm.plasma, norm=norm,
                                            orientation='vertical')
     cb1.set_ticks([0.21, 0.26, 0.31])
+
+    # Add scalebar
+    # 1um <-> 4.9751
+    scalebar = AnchoredSizeBar(axs[0][0].transData,
+                               75, '          ', 'lower right',
+                               pad=0.1,
+                               color='white',
+                               frameon=False,
+                               size_vertical=2,
+                               label_top=True)  # ,
+    # fontproperties=fontprops)
+
+    axs[0][0].add_artist(scalebar)
     plt.subplots_adjust(hspace=-.1, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
 
@@ -1932,7 +1948,7 @@ def fig_sup_1b(fluorophores=['TFP', 'YFP', 'mKate']):
                                pad=0.1,
                                color='white',
                                frameon=False,
-                               size_vertical=1,
+                               size_vertical=2,
                                label_top=True) #  ,
                                # fontproperties=fontprops)
 
