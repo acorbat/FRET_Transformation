@@ -826,17 +826,18 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
                                                        orientation='vertical')
                 cb1.set_ticks([r_min, r_max])
 
-            # Add scalebar
-            # 1um <-> 4.9751
-            scalebar = AnchoredSizeBar(axs[j][n].transData,
-                                       25, '5 $\mu$m', 'lower right',
-                                       pad=0.1,
-                                       color='white',
-                                       frameon=False,
-                                       size_vertical=1)  # ,
-            # fontproperties=fontprops)
+    # Add scalebar
+    # 1um <-> 4.9751
+    scalebar = AnchoredSizeBar(axs[0][0].transData,
+                               50, '          ', 'lower right',
+                               pad=0.1,
+                               color='white',
+                               frameon=False,
+                               size_vertical=1,
+                               label_top=True)  # ,
+    # fontproperties=fontprops)
 
-            axs[j][n].add_artist(scalebar)
+    axs[0][0].add_artist(scalebar)
     axs[0][0].set_ylabel('pre')
     axs[1][0].set_ylabel('post')
     plt.subplots_adjust(hspace=.0, wspace=0.1)
@@ -1793,11 +1794,26 @@ def fig_sup_1a():
             axs_in = plt.gca()
             axs_in.tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
             img = np.nan_to_num(imgs[this_time][fluo])
+            cmap = plt.cm.plasma
+            cmap = cmap.set_under('black')
             axs_in.imshow(img, cmap='plasma', vmin=0.17, vmax=0.36)
             rect_plot = matplotlib.patches.Rectangle(rect['xy_' + this_time], rect['width_' + this_time],
                                                      rect['height_' + this_time], fc=(1, 1, 0, 0), ec=(1, 0, 0, 1),
                                                      lw=3)
             axs_in.add_patch(rect_plot)
+            if k == 2:
+                # Add scalebar
+                # 1um <-> 4.9751
+                scalebar = AnchoredSizeBar(axs_in.transData,
+                                           200, '          ', 'lower right',
+                                           pad=0.1,
+                                           color='white',
+                                           frameon=False,
+                                           size_vertical=3,
+                                           label_top=True)  # ,
+                # fontproperties=fontprops)
+
+                axs_in.add_artist(scalebar)
 
     plt.savefig(str(sav_dir), format='svg')
 
@@ -1864,10 +1880,6 @@ def fig_sup_1b(fluorophores=['TFP', 'YFP', 'mKate']):
 
             if j == 0:
                 axs[j][n].set_title(titles[fluo])
-                if n == 1:
-                    axs[j][n].set_title('pre\n' + titles[fluo])
-            if j == 2 and n == 1:
-                axs[j][n].set_title('pos')
             if n == 0:
                 axs[j][n].set_ylabel('Fluorescence\n Intensity (a.u.)')
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
@@ -1884,19 +1896,6 @@ def fig_sup_1b(fluorophores=['TFP', 'YFP', 'mKate']):
                                                    cmap=cmap, norm=norm,
                                                    orientation='vertical')
             cb1.set_ticks([0.1, 0.2, 0.3, 0.4, 0.5])
-
-            # Add scalebar
-            # 1um <-> 4.9751
-            scalebar = AnchoredSizeBar(axs[j][n].transData,
-                                       25, '5 $\mu$m', 'lower right',
-                                       pad=0.1,
-                                       color='white',
-                                       frameon=False,
-                                       size_vertical=1)  # ,
-            # fontproperties=fontprops)
-
-            # Plot anisotropy figures
-            axs[j][n].add_artist(scalebar)
 
             j += 1
             img = imgs_r[this_time][fluo]
@@ -1926,17 +1925,18 @@ def fig_sup_1b(fluorophores=['TFP', 'YFP', 'mKate']):
                                                    orientation='vertical')
             cb1.set_ticks([0.20, 0.23, 0.26, 0.29, 0.33])
 
-            # Add scalebar
-            # 1um <-> 4.9751
-            scalebar = AnchoredSizeBar(axs[j][n].transData,
-                                       25, '5 $\mu$m', 'lower right',
-                                       pad=0.1,
-                                       color='white',
-                                       frameon=False,
-                                       size_vertical=1) #  ,
-                                       # fontproperties=fontprops)
+    # Add scalebar
+    # 1um <-> 4.9751
+    scalebar = AnchoredSizeBar(axs[0][0].transData,
+                               50, '          ', 'lower right',
+                               pad=0.1,
+                               color='white',
+                               frameon=False,
+                               size_vertical=1,
+                               label_top=True) #  ,
+                               # fontproperties=fontprops)
 
-            axs[j][n].add_artist(scalebar)
+    axs[0][0].add_artist(scalebar)
 
     # plt.subplots_adjust(hspace=-.1, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
