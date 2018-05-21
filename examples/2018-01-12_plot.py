@@ -794,17 +794,11 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
     r_min = 0.17
     r_max = 0.36
 
-    fig, axs = plt.subplots(2, 3, figsize=(4, 3.8))
+    fig, axs = plt.subplots(2, 3, figsize=(4.3, 3.8))
     # plt.gcf().subplots_adjust(left=0.01, right=.9)
 
     for n, fluo in enumerate(fluorophores):
         for j, this_time in enumerate(['ini', 'end']):
-            if j == 0:
-                axs[j][n].set_title(titles[fluo])
-                if n == 1:
-                    axs[j][n].set_title('pre\n' + titles[fluo])
-            if j == 1 and n == 1:
-                axs[j][n].set_title('post')
 
             img = imgs_r[this_time][fluo]
             crop_loc = (rect['xy_' + this_time][0],
@@ -813,9 +807,10 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
                         rect['xy_' + this_time][1] + rect['height_' + this_time])
             img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
             img = np.nan_to_num(img)
+            cmap = plt.cm.plasma
+            cmap = cmap.set_under('black')
             im_r = axs[j][n].imshow(img, vmin=r_min, vmax=r_max, cmap='plasma')
-            if n == 0:
-                axs[j][n].set_ylabel('Anisotropy')
+
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
 
             if n == 2:
@@ -831,6 +826,19 @@ def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
                                                        orientation='vertical')
                 cb1.set_ticks([r_min, r_max])
 
+            # Add scalebar
+            # 1um <-> 4.9751
+            scalebar = AnchoredSizeBar(axs[j][n].transData,
+                                       25, '5 $\mu$m', 'lower right',
+                                       pad=0.1,
+                                       color='white',
+                                       frameon=False,
+                                       size_vertical=1)  # ,
+            # fontproperties=fontprops)
+
+            axs[j][n].add_artist(scalebar)
+    axs[0][0].set_ylabel('pre')
+    axs[1][0].set_ylabel('post')
     plt.subplots_adjust(hspace=.0, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
 
