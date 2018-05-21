@@ -9,6 +9,7 @@ from scipy.ndimage import zoom
 from scipy.stats import gaussian_kde
 from scipy.interpolate import splrep, splev
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, zoomed_inset_axes, mark_inset
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.mlab import griddata
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -1793,7 +1794,7 @@ def fig_sup_1a():
     plt.savefig(str(sav_dir), format='svg')
 
 
-def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
+def fig_sup_1b(fluorophores=['TFP', 'YFP', 'mKate']):
     sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/supplementary/')
     sav_dir = sav_dir.joinpath('sensors_example.svg')
 
@@ -1863,6 +1864,7 @@ def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
                 axs[j][n].set_ylabel('Fluorescence\n Intensity (a.u.)')
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
 
+            # Add colorbar
             cax = inset_axes(axs[j][n],
                              width="7%",
                              height="100%",
@@ -1875,6 +1877,19 @@ def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
                                                    orientation='vertical')
             cb1.set_ticks([0.1, 0.2, 0.3, 0.4, 0.5])
 
+            # Add scalebar
+            # 1um <-> 4.9751
+            scalebar = AnchoredSizeBar(axs[j][n].transData,
+                                       25, '5 $\mu$m', 'lower right',
+                                       pad=0.1,
+                                       color='white',
+                                       frameon=False,
+                                       size_vertical=1)  # ,
+            # fontproperties=fontprops)
+
+            # Plot anisotropy figures
+            axs[j][n].add_artist(scalebar)
+
             j += 1
             img = imgs_r[this_time][fluo]
             crop_loc = (rect['xy_' + this_time][0],
@@ -1883,11 +1898,14 @@ def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
                         rect['xy_' + this_time][1] + rect['height_' + this_time])
             img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
             img = np.nan_to_num(img)
+            cmap = plt.cm.plasma
+            cmap.set_under(color='black')
             im_r = axs[j][n].imshow(img, vmin=r_min, vmax=r_max, cmap='plasma')
             if n == 0:
                 axs[j][n].set_ylabel('Anisotropy')
             axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
 
+            # Add colorbar
             cax = inset_axes(axs[j][n],
                              width="7%",
                              height="100%",
@@ -1899,6 +1917,18 @@ def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
                                                    cmap='plasma', norm=norm,
                                                    orientation='vertical')
             cb1.set_ticks([0.20, 0.23, 0.26, 0.29, 0.33])
+
+            # Add scalebar
+            # 1um <-> 4.9751
+            scalebar = AnchoredSizeBar(axs[j][n].transData,
+                                       25, '5 $\mu$m', 'lower right',
+                                       pad=0.1,
+                                       color='white',
+                                       frameon=False,
+                                       size_vertical=1) #  ,
+                                       # fontproperties=fontprops)
+
+            axs[j][n].add_artist(scalebar)
 
     # plt.subplots_adjust(hspace=-.1, wspace=0.1)
     plt.savefig(str(sav_dir), format='svg')
