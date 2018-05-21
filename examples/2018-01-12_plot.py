@@ -758,6 +758,82 @@ def fig_anisos_violin(df):
     plt.savefig(str(box_dir), format='svg')
 
 
+def fig_1_cells(fluorophores=['TFP', 'YFP', 'mKate']):
+    sav_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/img/figure_1/')
+    sav_dir = sav_dir.joinpath('cells_anis_change.svg')
+
+    mask_dir = pathlib.Path('/mnt/data/Laboratorio/Imaging three sensors/AnisoTestData/results/Regions/')
+    mask = {}
+    for t in [4, 50]:
+        filename = '030_%03.f_%s_%s.tif' % (t, 'f', 'YFP')
+        this_mask_dir = mask_dir.joinpath(filename)
+        this_mask = tif.TiffFile(str(this_mask_dir)).asarray()
+        mask[t] = this_mask
+
+    mask[4] = mask[4] != 11
+    mask[50] = mask[50] != 9
+
+    imgs_r = {}
+    imgs_r['ini'] = full_img(4)
+    imgs_r['end'] = full_img(50)
+    for fluo in fluorophores:
+        imgs_r['ini'][fluo][[mask[4]]] = 0
+        imgs_r['end'][fluo][[mask[50]]] = 0
+
+    rect = {}
+    rect['xy_ini'] = (1120, 260)
+    rect['height_ini'] = 180
+    rect['width_ini'] = 180
+    rect['xy_end'] = (1200, 270)
+    rect['height_end'] = 110
+    rect['width_end'] = 110
+
+    titles = {'TFP': 'x-b', 'mKate': 'x-r', 'YFP': 'x-y'}
+
+    r_min = 0.17
+    r_max = 0.36
+
+    fig, axs = plt.subplots(2, 3, figsize=(4, 3.8))
+    # plt.gcf().subplots_adjust(left=0.01, right=.9)
+
+    for n, fluo in enumerate(fluorophores):
+        for j, this_time in enumerate(['ini', 'end']):
+            if j == 0:
+                axs[j][n].set_title(titles[fluo])
+                if n == 1:
+                    axs[j][n].set_title('pre\n' + titles[fluo])
+            if j == 1 and n == 1:
+                axs[j][n].set_title('post')
+
+            img = imgs_r[this_time][fluo]
+            crop_loc = (rect['xy_' + this_time][0],
+                        rect['xy_' + this_time][0] + rect['width_' + this_time],
+                        rect['xy_' + this_time][1],
+                        rect['xy_' + this_time][1] + rect['height_' + this_time])
+            img = img[crop_loc[2]:crop_loc[3], crop_loc[0]:crop_loc[1]]
+            img = np.nan_to_num(img)
+            im_r = axs[j][n].imshow(img, vmin=r_min, vmax=r_max, cmap='plasma')
+            if n == 0:
+                axs[j][n].set_ylabel('Anisotropy')
+            axs[j][n].tick_params(bottom='False', left='False', labelbottom='False', labelleft='False')
+
+            if n == 2:
+                cax = inset_axes(axs[j][n],
+                                 width="7%",
+                                 height="100%",
+                                 bbox_transform=axs[j][n].transAxes,
+                                 bbox_to_anchor=(0.2, .05, 1, 1),
+                                 loc=1)
+                norm = matplotlib.colors.Normalize(vmin=r_min, vmax=r_max)
+                cb1 = matplotlib.colorbar.ColorbarBase(cax,
+                                                       cmap='plasma', norm=norm,
+                                                       orientation='vertical')
+                cb1.set_ticks([r_min, r_max])
+
+    plt.subplots_adjust(hspace=.0, wspace=0.1)
+    plt.savefig(str(sav_dir), format='svg')
+
+
 def pdf_best_curves():
     good_curves = [2188,
                    2177,
