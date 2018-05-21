@@ -1904,7 +1904,7 @@ def fig_sup_1b(fluorophores=['TFP', 'mKate', 'YFP']):
     plt.savefig(str(sav_dir), format='svg')
 
 
-def plot_anis_in_bars(ax, data, constructs, color=None):
+def plot_anis_in_bars(ax, data, constructs, bar_width, color=None):
     if color is None:
         color_mono = 'b'
         color_di = 'r'
@@ -1921,7 +1921,6 @@ def plot_anis_in_bars(ax, data, constructs, color=None):
     index = {'monomer': [], 'dimer': []}
     yticklabels = {'monomer': [], 'dimer': []}
     vals = {'monomer': [], 'dimer': []}
-    bar_width = 0.25
 
     for n, group in enumerate(constructs[-1::-1]):
         for i, this_construct in enumerate(group[-1::-1]):
@@ -1961,20 +1960,20 @@ def fig_sup_2():
     data_dir = data_dir.joinpath('constructs_anisotropy_org.pandas')
     data = pd.read_pickle(str(data_dir))
 
-    hetero_blues = [('TagBFP', 'EBFP2', 'TagBFP-EBFP2'),
-                    ('TagBFP', 'Cerulean', 'TagBFP-Cerulean'),
-                    ('Cerulean', 'TagBFP', 'Cerulean-TagBFP'),
-                    ('TagBFP', 'TFP', 'TagBFP-TFP'),
-                    ('TFP', 'TagBFP', 'TFP-TagBFP')]
+    hetero_blues = [('TagBFP', 'EBFP2', 'TagBFP-EBFP2 (DAPI)', 'TagBFP-EBFP2 (CFP)'),
+                    ('TagBFP', 'Cerulean', 'TagBFP-Cerulean (DAPI)', 'TagBFP-Cerulean (CFP)'),
+                    # ('Cerulean', 'TagBFP', 'Cerulean-TagBFP (DAPI)', 'Cerulean-TagBFP (CFP)'),
+                    ('TagBFP', 'TFP', 'TagBFP-TFP (DAPI)', 'TagBFP-TFP (CFP)')]
+                    # ('TFP', 'TagBFP', 'TFP-TagBFP (DAPI)', 'TFP-TagBFP (CFP)')]
     yellows = [('TFP', 'TFP-TFP'), ('EGFP', 'EGFP-EGFP'), ('mCitrine', 'mCitrine-mCitrine')]
     reds = [('KO', 'KO-KO'), ('KO2',  'KO2-KO2'), ('TagRFP', 'TagRFP-TagRFP'), ('mCherry', 'mCherry-mCherry'),
             ('mKate2', 'mKate2-mKate2'), ('mCherry', 'mKate2', 'mCherry-mKate2')]
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [7, 3, 6]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [5, 3, 5]})
 
-    plot_anis_in_bars(axs[0], data, hetero_blues, color='blues')
-    plot_anis_in_bars(axs[1], data, yellows, color='yellows')
-    plot_anis_in_bars(axs[2], data, reds, color='reds')
+    plot_anis_in_bars(axs[0], data, hetero_blues, 0.20, color='blues')
+    plot_anis_in_bars(axs[1], data, yellows, 0.33, color='yellows')
+    plot_anis_in_bars(axs[2], data, reds, 0.25, color='reds')
     axs[0].set_title('Anisotropy')
 
     fig.tight_layout()
