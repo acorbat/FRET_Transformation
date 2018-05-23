@@ -1999,6 +1999,7 @@ def plot_anis_in_bars(ax, data, constructs, bar_width, color=None):
             bar.set_edgecolor("k")
             bar.set_linewidth(1.5)
 
+    ax.set_xlim((0.15, 0.33))
     yticks = np.concatenate((index['monomer'], index['dimer']))
     ax.set_yticks(yticks)
     yticklabels = np.concatenate((yticklabels['monomer'], yticklabels['dimer']))
