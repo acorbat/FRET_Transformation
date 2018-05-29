@@ -2021,14 +2021,14 @@ def fig_sup_2():
                     ('TagBFP', 'TFP', 'TagBFP-TFP (DAPI)', 'TagBFP-TFP (CFP)')]
                     # ('TFP', 'TagBFP', 'TFP-TagBFP (DAPI)', 'TFP-TagBFP (CFP)')]
     yellows = [('TFP', 'TFP-TFP'), ('EGFP', 'EGFP-EGFP'), ('mCitrine', 'mCitrine-mCitrine')]
-    reds = [('KO', 'KO-KO'), ('KO2',  'KO2-KO2'), ('TagRFP', 'TagRFP-TagRFP'), ('mCherry', 'mCherry-mCherry'),
-            ('mKate2', 'mKate2-mKate2'), ('mCherry', 'mKate2', 'mCherry-mKate2')]
+    reds = [('TagRFP', 'TagRFP-TagRFP'), ('mCherry', 'mCherry-mCherry'), ('mKate2', 'mKate2-mKate2'),
+            ('mCherry', 'mKate2', 'mCherry-mKate2')]
 
-    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [5, 3, 5]})
+    fig, axs = plt.subplots(3, 1, sharex=True, figsize=(3.3, 8.5), gridspec_kw={'height_ratios': [5, 3, 4]})
 
     plot_anis_in_bars(axs[0], data, hetero_blues, 0.20, color='blues')
     plot_anis_in_bars(axs[1], data, yellows, 0.33, color='yellows')
-    plot_anis_in_bars(axs[2], data, reds, 0.25, color='reds')
+    plot_anis_in_bars(axs[2], data, reds, 0.28, color='reds')
     axs[0].set_title('Anisotropy')
 
     fig.tight_layout()
